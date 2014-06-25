@@ -85,7 +85,7 @@ def cutwire(bot, trigger):
 
 
 def explode(bot, trigger):
-    target = trigger.group(2)
+    target = trigger.group(2).strip()
     kmsg = 'KICK ' + trigger.sender + ' ' + target + \
            ' : Oh, come on, ' + target + '! You could\'ve at least picked one! Now you\'re dead. Guts, all over the place. You see that? Guts, all over YourPants. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
     bot.write([kmsg])
