@@ -41,7 +41,7 @@ def start(bot, trigger):
     if target == trigger.nick:
 	bot.say('I will not LET YOU BOMB YOURSELF!')
         return
-    if target not in bot.privileges[trigger.sender.lower()]:
+    if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('Please Bomb someone WHO IS HERE!')
         return
     message = 'Hey, ' + target + '! Don\'t look but, I think there\'s a bomb in your pants. 2 minute timer, 5 wires: Red, Yellow, Blue, White and Black. Which wire should I cut? Don\'t worry, I know what I\'m doing! (respond with .cutwire color)'
