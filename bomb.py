@@ -24,8 +24,8 @@ def start(bot, trigger):
     don't guess the right wire fast enough.
     """
     if not trigger.group(2):
+        bot.say('Who do you want to Bomb?')
         return
-
     if not trigger.sender.startswith('#'):
         return
     global bombs
