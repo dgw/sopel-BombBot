@@ -27,6 +27,7 @@ def start(bot, trigger):
         bot.say('Who do you want to Bomb?')
         return
     if not trigger.sender.startswith('#'):
+        bot.say('Tell me this in a channel')
         return
     global bombs
     global sch
