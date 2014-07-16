@@ -23,7 +23,7 @@ def start(bot, trigger):
     Put a bomb in the specified user's pants. They will be kicked if they
     don't guess the right wire fast enough.
     """
-    if not trigger.group(2):
+    if not trigger.group(3):
         bot.say('Who do you want to Bomb?')
         return
     if not trigger.sender.startswith('#'):
@@ -31,7 +31,7 @@ def start(bot, trigger):
         return
     global bombs
     global sch
-    target = trigger.group(2).split(' ')[0]
+    target = trigger.group(3)
     if target == bot.nick:
         bot.say('I will NOT BOMB MYSELF!')
         return
@@ -86,8 +86,10 @@ def cutwire(bot, trigger):
 
 
 def explode(bot, trigger):
-    target = trigger.group(2).strip()
+    target = trigger.group(3)
     kmsg = 'KICK ' + trigger.sender + ' ' + target + \
            ' : Oh, come on, ' + target + '! You could\'ve at least picked one! Now you\'re dead. Guts, all over the place. You see that? Guts, all over YourPants. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
     bot.write([kmsg])
     bombs.pop(target.lower())
+
+#Test
