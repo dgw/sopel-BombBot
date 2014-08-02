@@ -1,6 +1,6 @@
 import willie
 
-SOP = ["EmmaK","BrokenRobot","Shaun_Away","Shaun","Myst_Waker","Karamazov","slothified"]
+SOP = ["EmmaK","BrokenRobot","Shaun_Away","Shaun","Myst_Waker","Karamazov","slothified","iamnotharrypott","squid"]
 Founder = ["johnlage"]
 
 @willie.module.rule(".*")
