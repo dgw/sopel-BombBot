@@ -10,7 +10,7 @@ from random import choice, randint
 from re import search
 import sched
 import time
-
+from willie.tools import Nick
 colors = ['Red', 'Yellow', 'Blue', 'White', 'Black']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
@@ -21,7 +21,7 @@ bombs = dict()
 def start(bot, trigger):
     """
     Put a bomb in the specified user's pants. They will be kicked if they
-    don't guess the right wire fast enough.
+     don't guess the right wire fast enough.
     """
     if not trigger.group(3):
         bot.say('Who do you want to Bomb?')
@@ -31,7 +31,7 @@ def start(bot, trigger):
         return
     global bombs
     global sch
-    target = trigger.group(3)
+    target = Nick(trigger.group(3))
     if target == bot.nick:
         bot.say('I will NOT BOMB MYSELF!')
         return
@@ -49,7 +49,7 @@ def start(bot, trigger):
     color = choice(colors)
     bot.msg(trigger.nick,
                "Hey, don\'t tell %s, but the %s wire? Yeah, that\'s the one."
-               "But shh! Don\'t say anything!" % (target, color))
+               " But shh! Don\'t say anything!" % (target, color))
     code = sch.enter(fuse, 1, explode, (bot, trigger))
     bombs[target.lower()] = (color, code)
     sch.run()
@@ -61,7 +61,7 @@ def cutwire(bot, trigger):
     Tells willie to cut a wire when you've been bombed.
     """
     global bombs, colors
-    target = trigger.nick
+    target = Nick(trigger.nick)
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire till someone bombs you')
         return
@@ -86,7 +86,7 @@ def cutwire(bot, trigger):
 
 
 def explode(bot, trigger):
-    target = trigger.group(3)
+    target = Nick(trigger.group(3))
     kmsg = 'KICK ' + trigger.sender + ' ' + target + \
            ' : Oh, come on, ' + target + '! You could\'ve at least picked one! Now you\'re dead. Guts, all over the place. You see that? Guts, all over YourPants. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
     bot.write([kmsg])
