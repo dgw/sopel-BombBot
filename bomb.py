@@ -39,7 +39,7 @@ def start(bot, trigger):
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
         return
     if target == trigger.nick:
-	bot.say('I will not LET YOU BOMB YOURSELF!')
+        bot.say('I will not LET YOU BOMB YOURSELF!')
         return
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('Please Bomb someone WHO IS HERE!')
