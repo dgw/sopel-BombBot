@@ -10,7 +10,7 @@ from random import choice, randint
 from re import search
 import sched
 import time
-from willie.tools import Nick
+from willie.tools import Identifier
 colors = ['Red', 'Yellow', 'Blue', 'White', 'Black']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
@@ -31,7 +31,7 @@ def start(bot, trigger):
         return
     global bombs
     global sch
-    target = Nick(trigger.group(3))
+    target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say('I will NOT BOMB MYSELF!')
         return
@@ -61,7 +61,7 @@ def cutwire(bot, trigger):
     Tells willie to cut a wire when you've been bombed.
     """
     global bombs, colors
-    target = Nick(trigger.nick)
+    target = Identifier(trigger.nick)
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire till someone bombs you')
         return
@@ -86,7 +86,7 @@ def cutwire(bot, trigger):
 
 
 def explode(bot, trigger):
-    target = Nick(trigger.group(3))
+    target = Identifier(trigger.group(3))
     kmsg = 'KICK ' + trigger.sender + ' ' + target + \
            ' : Oh, come on, ' + target + '! You could\'ve at least picked one! Now you\'re dead. Guts, all over the place. You see that? Guts, all over YourPants. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
     bot.write([kmsg])
