@@ -65,6 +65,9 @@ def cutwire(bot, trigger):
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire till someone bombs you')
         return
+    if not trigger.group(2):
+        bot.say('You have to choose a wire to cut.')
+        return
     color, code = bombs.pop(target.lower())  # remove target from bomb list
     wirecut = trigger.group(2).rstrip(' ')
     if wirecut.lower() in ('all', 'all!'):
