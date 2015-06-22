@@ -24,32 +24,31 @@ def start(bot, trigger):
      don't guess the right wire fast enough.
     """
     if not trigger.group(3):
-        bot.say('Who do you want to Bomb?')
+        bot.say('Who do you want to bomb?')
         return
     if not trigger.sender.startswith('#'):
-        bot.say('Tell me this in a channel')
+        bot.say('You can only bomb someone in a channel.')
         return
     global bombs
     global sch
     target = Identifier(trigger.group(3))
     if target == bot.nick:
-        bot.say('I will NOT BOMB MYSELF!')
+        bot.say('You thought you could trick me into bombing myself?!')
         return
     if target.lower() in bombs:
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
         return
     if target == trigger.nick:
-        bot.say('I will not LET YOU BOMB YOURSELF!')
+        bot.say('pls. Bomb a friend if you have to!')
         return
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
-        bot.say('Please Bomb someone WHO IS HERE!')
+        bot.say('You can\'t bomb imaginary people!')
         return
-    message = 'Hey, ' + target + '! Don\'t look but, I think there\'s a bomb in your pants. 2 minute timer, 5 wires: Red, Yellow, Blue, White and Black. Which wire should I cut? Don\'t worry, I know what I\'m doing! (respond with .cutwire color)'
+    message = 'Hey, ' + target + '! I think there\'s a bomb in your pants. 2 minute timer, 5 wires: Red, Yellow, Blue, White and Black. Which wire should I cut? (respond with @cutwire color)'
     bot.say(message)
     color = choice(colors)
     bot.msg(trigger.nick,
-               "Hey, don\'t tell %s, but the %s wire? Yeah, that\'s the one."
-               " But shh! Don\'t say anything!" % (target, color))
+               "Hey, don\'t tell %s, but it's the %s wire." % (target, color))
     code = sch.enter(fuse, 1, explode, (bot, trigger))
     bombs[target.lower()] = (color, code)
     sch.run()
@@ -63,7 +62,7 @@ def cutwire(bot, trigger):
     global bombs, colors
     target = Identifier(trigger.nick)
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
-        bot.say('You can\'t cut a wire till someone bombs you')
+        bot.say('You can\'t cut a wire until someone bombs you, ' + target)
         return
     if not trigger.group(2):
         bot.say('You have to choose a wire to cut.')
@@ -76,7 +75,7 @@ def cutwire(bot, trigger):
                 % (trigger.sender, target, color))
         bot.write([kmsg])
     elif wirecut.capitalize() not in colors:
-        bot.say('I can\'t seem to find that wire, ' + target + '! You sure you\'re picking the right one? It\'s not here!')
+        bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
         bombs[target.lower()] = (color, code)  # Add the target back onto the bomb list,
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
@@ -84,14 +83,14 @@ def cutwire(bot, trigger):
     else:
         sch.cancel(code)  # defuse timer, execute premature detonation
         kmsg = 'KICK ' + trigger.sender + ' ' + target + \
-               ' : No! No, that\'s the wrong one. Aww, you\'ve gone and killed yourself. Oh, that\'s... that\'s not good. No good at all, really. Wow. Sorry. (You should\'ve picked the ' + color + ' wire.)'
+               ' : Nope! That\'s the wrong one. Aww, you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the ' + color + ' wire.)'
         bot.write([kmsg])
 
 
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     kmsg = 'KICK ' + trigger.sender + ' ' + target + \
-           ' : Oh, come on, ' + target + '! You could\'ve at least picked one! Now you\'re dead. Guts, all over the place. You see that? Guts, all over YourPants. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
+           ' : ' + target + 'pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
     bot.write([kmsg])
     bombs.pop(target.lower())
 
