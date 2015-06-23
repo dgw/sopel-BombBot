@@ -47,8 +47,7 @@ def start(bot, trigger):
     message = 'Hey, ' + target + '! I think there\'s a bomb in your pants. 2 minute timer, 5 wires: Red, Yellow, Blue, White and Black. Which wire should I cut? (respond with @cutwire color)'
     bot.say(message)
     color = choice(colors)
-    bot.msg(trigger.nick,
-               "Hey, don\'t tell %s, but it's the %s wire." % (target, color))
+    bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
     code = sch.enter(fuse, 1, explode, (bot, trigger))
     bombs[target.lower()] = (color, code)
     sch.run()
