@@ -6,7 +6,7 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dfbta.net
 """
 from willie.module import commands, rule
-from random import choice, randint, sample
+from random import choice, randint, randrange, sample
 from re import search
 import sched
 import time
@@ -51,7 +51,7 @@ def start(bot, trigger):
     if bot.db.get_nick_value(Identifier(target), 'unbombable'):
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
-    wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), 4)) ]
+    wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3,5))) ]
     color = choice(wires)
     num_wires = len(wires)
     wires = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
