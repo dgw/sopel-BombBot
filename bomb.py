@@ -11,7 +11,7 @@ from re import search
 import sched
 import time
 from willie.tools import Identifier
-colors = ['Red', 'Yellow', 'Blue', 'White', 'Black']
+colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
 bombs = dict()
