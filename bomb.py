@@ -5,16 +5,16 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands
+from willie.module import commands,rule,require_admin
 from random import choice, randint
 from re import search
 import sched
 import time
 from willie.tools import Identifier
+
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
 # eventually this should be a config thing that can be edited while the bot is running...
-bomb_haters = ['denpa']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
 bombs = dict()
@@ -34,7 +34,6 @@ def start(bot, trigger):
         return
     global bombs
     global sch
-    global bomb_haters
     target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say('You thought you could trick me into bombing myself?!')
@@ -42,14 +41,14 @@ def start(bot, trigger):
     if target.lower() in bombs:
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
         return
-    if target.lower() in bomb_haters:
-        bot.say('I\'m not allowed to bomb %s, sorry.' % target)
-        return
     if target == trigger.nick:
         bot.say('%s pls. Bomb a friend if you have to!' % trigger.nick)
         return
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('You can\'t bomb imaginary people!')
+        return
+    if bot.db.get_nick_value(Identifier(target), 'unbombable'):
+        bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
     message = 'Hey, %s! I think there\'s a bomb in your pants. 2 minute timer, %d wires: %s. ' \
               'Which wire should I cut? (respond with @cutwire color)' \
@@ -104,4 +103,19 @@ def explode(bot, trigger):
     bot.write([kmsg])
     bombs.pop(target.lower())
 
-#Test
+
+@rule('$nickdon\'t bomb (.+)')
+@require_admin
+def exclude(bot, trigger):
+    target = Identifier(trigger.group(1))
+    bot.db.set_nick_value(target, 'unbombable', True)
+    bot.say('Marked %s as unbombable.' % target)
+
+
+@rule('$nickyou can bomb (.+)')
+@require_admin
+def unexclude(bot, trigger):
+    target = Identifier(trigger.group(1))
+    bot.db.set_nick_value(target, 'unbombable', False)
+    bot.say('Marked %s as bombable again.' % target)
+
