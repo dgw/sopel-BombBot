@@ -14,7 +14,7 @@ from willie.tools import Identifier
 from willie import formatting
 
 # code below relies on colors being at least 3 elements long
-colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black', 'Brown', 'Purple', 'Orange', 'Pink']
+colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
 timer = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
@@ -52,10 +52,10 @@ def start(bot, trigger):
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
     wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3,5))) ]
-    color = choice(wires)
+    color = choice(wires).replace('Light_', '')
     num_wires = len(wires)
     wires = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
-    wires_list = ", ".join(wires[:-2] + [" and ".join(wires[-2:])])
+    wires_list = ", ".join(wires[:-2] + [" and ".join(wires[-2:])]).replace('Light_', '')
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
               'Which wire should I cut? (respond with @cutwire color)' \
               % ( target, timer, num_wires, wires_list )
