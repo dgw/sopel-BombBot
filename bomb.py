@@ -130,10 +130,15 @@ def bombstats(bot, trigger):
     alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
     total = wrongs + timeouts + defuses + alls
     wrongs += alls # merely a presentation decision
-    msg = '%s defused %d out of %d bombs, failing %d times and not even attempting %d.' \
-           % (target, defuses, total, wrongs, timeouts)
+    # grammar shit
+    g_wrongs = 'time' if wrongs == 1 else 'times'
+    g_timeouts = 'attempt' if timeouts == 1 else 'attempts'
+    g_defuses = 'bomb' if defuses == 1 else 'bombs'
+    g_alls = 'was' if alls == 1 else 'were'
+    msg = '%s defused %d %s, but failed %d %s and didn\'t even bother with %d %s.' \
+           % (target, defuses, g_defuses, wrongs, g_wrongs, timeouts, g_timeouts)
     if alls:
-        msg += ' %d of the failures were from not giving a fuck and cutting ALL the wires!' % alls
+        msg += ' (%d of the failures %s from not giving a fuck and cutting ALL the wires!)' % (alls, g_alls)
     bot.say(msg)
 
 
