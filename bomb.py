@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, rule
+from willie.module import commands, rule, require_owner
 from random import choice, randint, randrange, sample
 from re import search
 import sched
@@ -143,6 +143,19 @@ def bombstats(bot, trigger):
     if alls:
         msg += ' (%d of the failures %s from not giving a fuck and cutting ALL the wires!)' % (alls, g_alls)
     bot.say(msg)
+
+
+@commands('bombstatreset')
+@require_owner('Only the bot owner can reset bomb stats')
+def statreset(bot, trigger):
+    if not trigger.group(2):
+        bot.say('Whose bomb stats do you want me to reset?')
+        return
+    target = trigger.group(2)
+    keys = ['bomb_wrongs', 'bomb_defuses', 'bomb_timeouts', 'bomb_alls']
+    for key in keys:
+        bot.db.set_nick_value(target, key, 0)
+    bot.say('Bomb stats for %s reset.' % target)
 
 
 @rule('$nickdon\'t bomb (.+)')
