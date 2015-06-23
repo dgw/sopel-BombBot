@@ -39,7 +39,7 @@ def start(bot, trigger):
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
         return
     if target == trigger.nick:
-        bot.say('pls. Bomb a friend if you have to!')
+        bot.say('%s pls. Bomb a friend if you have to!' % trigger.nick)
         return
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('You can\'t bomb imaginary people!')
@@ -71,8 +71,8 @@ def cutwire(bot, trigger):
     wirecut = trigger.group(2).rstrip(' ')
     if wirecut.lower() in ('all', 'all!'):
         sch.cancel(code)  # defuse timer, execute premature detonation
-        kmsg = ('KICK %s %s : Cutting ALL the wires! *boom* (You should\'ve picked the %s wire.)'
-                % (trigger.sender, target, color))
+        bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
+        kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
         bot.write([kmsg])
     elif wirecut.capitalize() not in colors:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
@@ -82,15 +82,16 @@ def cutwire(bot, trigger):
         sch.cancel(code)  # defuse bomb
     else:
         sch.cancel(code)  # defuse timer, execute premature detonation
-        kmsg = 'KICK ' + trigger.sender + ' ' + target + \
-               ' : Nope! That\'s the wrong one. Aww, you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the ' + color + ' wire.)'
+        bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
+        kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
         bot.write([kmsg])
 
 
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
-    kmsg = 'KICK ' + trigger.sender + ' ' + target + \
-           ' : ' + target + 'pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place. (You should\'ve picked the ' + bombs[target.lower()][0] + ' wire.)'
+    bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
+        ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][0]) )
+    kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
     bot.write([kmsg])
     bombs.pop(target.lower())
 
