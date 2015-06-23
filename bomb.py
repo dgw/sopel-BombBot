@@ -84,26 +84,26 @@ def cutwire(bot, trigger):
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
         kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
         bot.write([kmsg])
-        alls = bot.db.get_nick_value(target, 'bomb_alls')
-        new_alls = 1 if alls is None else 1 + alls
-        bot.db.set_nick_value(target, 'bomb_alls', new_alls)
+        alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
+        alls += 1
+        bot.db.set_nick_value(target, 'bomb_alls', alls)
     elif wirecut.capitalize() not in colors:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
         bombs[target.lower()] = (color, code)  # Add the target back onto the bomb list,
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
         sch.cancel(code)  # defuse bomb
-        defuses = bot.db.get_nick_value(target, 'bomb_defuses')
-        new_defuses = 1 if defuses is None else 1 + defuses
-        bot.db.set_nick_value(target, 'bomb_defuses', new_defuses)
+        defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
+        defuses += 1
+        bot.db.set_nick_value(target, 'bomb_defuses', defuses)
     else:
         sch.cancel(code)  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
         kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
         bot.write([kmsg])
-        wrongs = bot.db.get_nick_value(target, 'bomb_wrongs')
-        new_wrongs = 1 if wrongs is None else 1 + wrongs
-        bot.db.set_nick_value(target, 'bomb_wrongs', new_wrongs)
+        wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
+        wrongs += 1
+        bot.db.set_nick_value(target, 'bomb_wrongs', wrongs)
 
 
 def explode(bot, trigger):
@@ -113,9 +113,9 @@ def explode(bot, trigger):
     kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
     bot.write([kmsg])
     bombs.pop(target.lower())
-    timeouts = bot.db.get_nick_value(target, 'bomb_timeouts')
-    new_timeouts = 1 if timeouts is None else 1 + timeouts
-    bot.db.set_nick_value(target, 'bomb_timeouts', new_timeouts)
+    timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
+    timeouts += 1
+    bot.db.set_nick_value(target, 'bomb_timeouts', timeouts)
 
 
 @commands('bombstats')
