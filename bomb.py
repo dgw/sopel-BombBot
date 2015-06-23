@@ -11,6 +11,7 @@ from re import search
 import sched
 import time
 from willie.tools import Identifier
+# code below relies on colors being at least 3 elements long
 colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
@@ -44,7 +45,10 @@ def start(bot, trigger):
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('You can\'t bomb imaginary people!')
         return
-    message = 'Hey, ' + target + '! I think there\'s a bomb in your pants. 2 minute timer, 5 wires: Red, Yellow, Blue, White and Black. Which wire should I cut? (respond with @cutwire color)'
+    message = 'Hey, %s! I think there\'s a bomb in your pants. 2 minute timer, %d wires: %s. ' \
+              'Which wire should I cut? (respond with @cutwire color)' \
+              % ( target, len(colors), ", ".join(colors[:-2] + [" and ".join(colors[-2:])]) )
+                                          # 3 is a good minimum number of colors anyway; who needs edge case handling?
     bot.say(message)
     color = choice(colors)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
