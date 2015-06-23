@@ -107,17 +107,25 @@ def explode(bot, trigger):
 
 
 @rule('$nickdon\'t bomb (.+)')
-@require_admin
 def exclude(bot, trigger):
     target = Identifier(trigger.group(1))
+    if not trigger.admin and target != 'me':
+        bot.say('Only bot admins can exclude other users.')
+        return
+    if target == 'me':
+        target = Identifier(trigger.nick)
     bot.db.set_nick_value(target, 'unbombable', True)
     bot.say('Marked %s as unbombable.' % target)
 
 
 @rule('$nickyou can bomb (.+)')
-@require_admin
 def unexclude(bot, trigger):
     target = Identifier(trigger.group(1))
+    if not trigger.admin and target != 'me':
+        bot.say('Only bot admins can unexclude other users.')
+        return
+    if target == 'me':
+        target = Identifier(trigger.nick)
     bot.db.set_nick_value(target, 'unbombable', False)
     bot.say('Marked %s as bombable again.' % target)
 
