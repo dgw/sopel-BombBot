@@ -5,18 +5,16 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands,rule,require_admin
-from random import choice, randint
+from willie.module import commands, rule
+from random import choice, randint, sample
 from re import search
 import sched
 import time
 from willie.tools import Identifier
+from willie import formatting
 
 # code below relies on colors being at least 3 elements long
-colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
-num_colors = len(colors)
-color_list = ", ".join(colors[:-2] + [" and ".join(colors[-2:])]) # using too few colors will break this; see above
-# eventually this should be a config thing that can be edited while the bot is running...
+colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black', 'Brown', 'Purple', 'Orange', 'Pink']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
 timer = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
@@ -53,11 +51,15 @@ def start(bot, trigger):
     if bot.db.get_nick_value(Identifier(target), 'unbombable'):
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
+    wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), 4)) ]
+    color = choice(wires)
+    num_wires = len(wires)
+    wires = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
+    wires_list = ", ".join(wires[:-2] + [" and ".join(wires[-2:])])
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
               'Which wire should I cut? (respond with @cutwire color)' \
-              % ( target, timer, num_colors, color_list )
+              % ( target, timer, num_wires, wires_list )
     bot.say(message)
-    color = choice(colors)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
     code = sch.enter(fuse, 1, explode, (bot, trigger))
     bombs[target.lower()] = (color, code)
