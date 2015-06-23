@@ -52,17 +52,18 @@ def start(bot, trigger):
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
     wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3,5))) ]
-    color = choice(wires).replace('Light_', '')
     num_wires = len(wires)
-    wires = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
-    wires_list = ", ".join(wires[:-2] + [" and ".join(wires[-2:])]).replace('Light_', '')
+    wires_list = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
+    wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
+    wires = [ wire.replace('Light_', '') for wire in wires ]
+    color = choice(wires)
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
               'Which wire should I cut? (respond with @cutwire color)' \
               % ( target, timer, num_wires, wires_list )
     bot.say(message)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
     code = sch.enter(fuse, 1, explode, (bot, trigger))
-    bombs[target.lower()] = (color, code)
+    bombs[target.lower()] = (wires, color, code)
     sch.run()
 
 
@@ -71,7 +72,7 @@ def cutwire(bot, trigger):
     """
     Tells willie to cut a wire when you've been bombed.
     """
-    global bombs, colors
+    global bombs
     target = Identifier(trigger.nick)
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire until someone bombs you, ' + target)
@@ -79,7 +80,7 @@ def cutwire(bot, trigger):
     if not trigger.group(2):
         bot.say('You have to choose a wire to cut.')
         return
-    color, code = bombs.pop(target.lower())  # remove target from bomb list
+    wires, color, code = bombs.pop(target.lower())  # remove target from bomb list
     wirecut = trigger.group(2).rstrip(' ')
     if wirecut.lower() in ('all', 'all!'):
         sch.cancel(code)  # defuse timer, execute premature detonation
@@ -89,7 +90,7 @@ def cutwire(bot, trigger):
         alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
         alls += 1
         bot.db.set_nick_value(target, 'bomb_alls', alls)
-    elif wirecut.capitalize() not in colors:
+    elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
         bombs[target.lower()] = (color, code)  # Add the target back onto the bomb list,
     elif wirecut.capitalize() == color:
@@ -111,7 +112,7 @@ def cutwire(bot, trigger):
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
-        ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][0]) )
+        ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][1]) )
     kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
     bot.write([kmsg])
     bombs.pop(target.lower())
