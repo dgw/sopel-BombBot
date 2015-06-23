@@ -14,9 +14,12 @@ from willie.tools import Identifier
 
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
+num_colors = len(colors)
+color_list = ", ".join(colors[:-2] + [" and ".join(colors[-2:])]) # using too few colors will break this; see above
 # eventually this should be a config thing that can be edited while the bot is running...
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
+timer = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
 bombs = dict()
 
 
@@ -50,10 +53,9 @@ def start(bot, trigger):
     if bot.db.get_nick_value(Identifier(target), 'unbombable'):
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
-    message = 'Hey, %s! I think there\'s a bomb in your pants. 2 minute timer, %d wires: %s. ' \
+    message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
               'Which wire should I cut? (respond with @cutwire color)' \
-              % ( target, len(colors), ", ".join(colors[:-2] + [" and ".join(colors[-2:])]) )
-                                          # 3 is a good minimum number of colors anyway; who needs edge case handling?
+              % ( target, timer, num_colors, color_list )
     bot.say(message)
     color = choice(colors)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
