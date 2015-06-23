@@ -13,6 +13,8 @@ import time
 from willie.tools import Identifier
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Green', 'Blue', 'Yellow', 'White', 'Black']
+# eventually this should be a config thing that can be edited while the bot is running...
+bomb_haters = ['denpa']
 sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
 bombs = dict()
@@ -32,12 +34,16 @@ def start(bot, trigger):
         return
     global bombs
     global sch
+    global bomb_haters
     target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say('You thought you could trick me into bombing myself?!')
         return
     if target.lower() in bombs:
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
+        return
+    if target.lower() in bomb_haters:
+        bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
     if target == trigger.nick:
         bot.say('%s pls. Bomb a friend if you have to!' % trigger.nick)
