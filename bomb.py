@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, require_owner
+from willie.module import commands, example, require_owner
 from random import choice, randint, randrange, sample
 from re import search
 import sched
@@ -22,6 +22,7 @@ bombs = dict()
 
 
 @commands('bomb')
+@example('.bomb nicky')
 def start(bot, trigger):
     """
     Put a bomb in the specified user's pants. They will be kicked if they
@@ -58,8 +59,8 @@ def start(bot, trigger):
     wires = [ wire.replace('Light_', '') for wire in wires ]
     color = choice(wires)
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
-              'Which wire should I cut? (respond with @cutwire color)' \
-              % ( target, timer, num_wires, wires_list )
+              'Which wire should I cut? (respond with %scutwire color)' \
+              % ( target, timer, num_wires, wires_list, bot.config.core.help_prefix or '.' )
     bot.say(message)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
     code = sch.enter(fuse, 1, explode, (bot, trigger))
@@ -68,6 +69,7 @@ def start(bot, trigger):
 
 
 @commands('cutwire')
+@example('.cutwire red')
 def cutwire(bot, trigger):
     """
     Tells willie to cut a wire when you've been bombed.
@@ -122,7 +124,12 @@ def explode(bot, trigger):
 
 
 @commands('bombstats')
+@example('.bombstats')
+@example('.bombstats myfriend')
 def bombstats(bot, trigger):
+    """
+    Get bomb stats for yourself or another user.
+    """
     if not trigger.group(2):
         target = Identifier(trigger.nick)
     else:
@@ -153,8 +160,12 @@ def bombstats(bot, trigger):
 
 
 @commands('bombstatreset')
+@example('.bombstatreset spammer')
 @require_owner('Only the bot owner can reset bomb stats')
 def statreset(bot, trigger):
+    """
+    Reset a given user's bomb stats (e.g. after abuse)
+    """
     if not trigger.group(2):
         bot.say('Whose bomb stats do you want me to reset?')
         return
@@ -166,7 +177,11 @@ def statreset(bot, trigger):
 
 
 @commands('bomboff')
+@example('.bomboff')
 def exclude(bot, trigger):
+    """
+    Disable bombing yourself (admins: or another user)
+    """
     if not trigger.group(2):
         target = trigger.nick
     else:
@@ -179,7 +194,11 @@ def exclude(bot, trigger):
 
 
 @commands('bombon')
+@example('.bombon')
 def unexclude(bot, trigger):
+    """
+    Re-enable bombing yourself (admins: or another user)
+    """
     if not trigger.group(2):
         target = trigger.nick
     else:
