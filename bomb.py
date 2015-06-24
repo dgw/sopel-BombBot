@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, rule, require_owner
+from willie.module import commands, require_owner
 from random import choice, randint, randrange, sample
 from re import search
 import sched
@@ -158,26 +158,28 @@ def statreset(bot, trigger):
     bot.say('Bomb stats for %s reset.' % target)
 
 
-@rule('$nickdon\'t bomb (.+)')
+@commands('bomboff')
 def exclude(bot, trigger):
-    target = Identifier(trigger.group(1))
-    if not trigger.admin and target != 'me':
+    if not trigger.group(2):
+        target = trigger.nick
+    else:
+        target = Identifier(trigger.group(2))
+    if not trigger.admin and target != trigger.nick:
         bot.say('Only bot admins can exclude other users.')
         return
-    if target == 'me':
-        target = Identifier(trigger.nick)
     bot.db.set_nick_value(target, 'unbombable', True)
     bot.say('Marked %s as unbombable.' % target)
 
 
-@rule('$nickyou can bomb (.+)')
+@commands('bombon')
 def unexclude(bot, trigger):
-    target = Identifier(trigger.group(1))
-    if not trigger.admin and target != 'me':
+    if not trigger.group(2):
+        target = trigger.nick
+    else:
+        target = Identifier(trigger.group(2))
+    if not trigger.admin and target != trigger.nick:
         bot.say('Only bot admins can unexclude other users.')
         return
-    if target == 'me':
-        target = Identifier(trigger.nick)
     bot.db.set_nick_value(target, 'unbombable', False)
     bot.say('Marked %s as bombable again.' % target)
 
