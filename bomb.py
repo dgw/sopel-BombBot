@@ -59,7 +59,7 @@ def start(bot, trigger):
     wires = [ wire.replace('Light_', '') for wire in wires ]
     color = choice(wires)
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
-              'Which wire should I cut? (respond with %scutwire color)' \
+              'Which wire would you like to cut? (respond with %scutwire color)' \
               % ( target, timer, num_wires, wires_list, bot.config.core.help_prefix or '.' )
     bot.say(message)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
