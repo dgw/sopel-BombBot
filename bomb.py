@@ -132,6 +132,13 @@ def bombstats(bot, trigger):
     defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
     alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
     total = wrongs + timeouts + defuses + alls
+    # short-circuit if user has no stats
+    if total == 0:
+        msg = 'Nobody bombed %s yet!' % target
+        if target != trigger.nick:
+            msg += ' Maybe you should be the first, %s. =3' % trigger.nick
+        bot.say(msg)
+        return
     wrongs += alls # merely a presentation decision
     # grammar shit
     g_wrongs = 'time' if wrongs == 1 else 'times'
