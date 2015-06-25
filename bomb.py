@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, example, require_owner
+from willie.module import commands, example, rate, require_owner
 from random import choice, randint, randrange, sample
 from re import search
 import sched
@@ -22,6 +22,7 @@ bombs = dict()
 
 
 @commands('bomb')
+@rate(600)
 @example('.bomb nicky')
 def start(bot, trigger):
     """
