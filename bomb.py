@@ -50,7 +50,7 @@ def start(bot, trigger):
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('You can\'t bomb imaginary people!')
         return
-    if bot.db.get_nick_value(Identifier(target), 'unbombable'):
+    if bot.db.get_nick_value(Identifier(target), 'unbombable') and not trigger.admin:
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
         return
     wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3,5))) ]
