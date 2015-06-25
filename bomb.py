@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, example, rate, require_owner
+from willie.module import commands, example, NOLIMIT, rate, require_owner
 from random import choice, randint, randrange, sample
 from re import search
 import sched
@@ -31,28 +31,28 @@ def start(bot, trigger):
     """
     if not trigger.group(3):
         bot.say('Who do you want to bomb?')
-        return
+        return NOLIMIT
     if not trigger.sender.startswith('#'):
         bot.say('You can only bomb someone in a channel.')
-        return
+        return NOLIMIT
     global bombs
     global sch
     target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say('You thought you could trick me into bombing myself?!')
-        return
+        return NOLIMIT
     if target.lower() in bombs:
         bot.say('I can\'t fit another bomb in ' + target + '\'s pants!')
-        return
+        return NOLIMIT
     if target == trigger.nick:
         bot.say('%s pls. Bomb a friend if you have to!' % trigger.nick)
-        return
+        return NOLIMIT
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say('You can\'t bomb imaginary people!')
-        return
+        return NOLIMIT
     if bot.db.get_nick_value(Identifier(target), 'unbombable') and not trigger.admin:
         bot.say('I\'m not allowed to bomb %s, sorry.' % target)
-        return
+        return NOLIMIT
     wires = [ colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3,5))) ]
     num_wires = len(wires)
     wires_list = [ formatting.color( str(wire), str(wire) ) for wire in wires ]
