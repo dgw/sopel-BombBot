@@ -94,7 +94,7 @@ def cutwire(bot, trigger):
         bot.db.set_nick_value(target, 'bomb_alls', alls)
     elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
-        bombs[target.lower()] = (color, code)  # Add the target back onto the bomb list,
+        bombs[target.lower()] = (wires, color, code)  # Add the target back onto the bomb list,
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
         sch.cancel(code)  # defuse bomb
