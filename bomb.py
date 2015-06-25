@@ -8,16 +8,15 @@ http://willie.dfbta.net
 from willie.module import commands, example, NOLIMIT, rate, require_owner
 from random import choice, randint, randrange, sample
 from re import search
-import sched
+from threading import Timer
 import time
 from willie.tools import Identifier
 from willie import formatting
 
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
-sch = sched.scheduler(time.time, time.sleep)
 fuse = 120  # seconds
-timer = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
+fuse_text = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
 bombs = dict()
 
 
@@ -36,7 +35,6 @@ def start(bot, trigger):
         bot.say('You can only bomb someone in a channel.')
         return NOLIMIT
     global bombs
-    global sch
     target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say('You thought you could trick me into bombing myself?!')
@@ -61,12 +59,12 @@ def start(bot, trigger):
     color = choice(wires)
     message = 'Hey, %s! I think there\'s a bomb in your pants. %s timer, %d wires: %s. ' \
               'Which wire would you like to cut? (respond with %scutwire color)' \
-              % ( target, timer, num_wires, wires_list, bot.config.core.help_prefix or '.' )
+              % ( target, fuse_text, num_wires, wires_list, bot.config.core.help_prefix or '.' )
     bot.say(message)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
-    code = sch.enter(fuse, 1, explode, (bot, trigger))
-    bombs[target.lower()] = (wires, color, code)
-    sch.run()
+    timer = Timer(fuse, explode, (bot, trigger))
+    bombs[target.lower()] = (wires, color, timer)
+    timer.start()
 
 
 @commands('cutwire')
@@ -83,10 +81,10 @@ def cutwire(bot, trigger):
     if not trigger.group(2):
         bot.say('You have to choose a wire to cut.')
         return
-    wires, color, code = bombs.pop(target.lower())  # remove target from bomb list
+    wires, color, timer = bombs.pop(target.lower())  # remove target from bomb list
     wirecut = trigger.group(2).rstrip(' ')
     if wirecut.lower() in ('all', 'all!'):
-        sch.cancel(code)  # defuse timer, execute premature detonation
+        timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
         kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
         bot.write([kmsg])
@@ -95,15 +93,15 @@ def cutwire(bot, trigger):
         bot.db.set_nick_value(target, 'bomb_alls', alls)
     elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
-        bombs[target.lower()] = (wires, color, code)  # Add the target back onto the bomb list,
+        bombs[target.lower()] = (wires, color, timer)  # Add the target back onto the bomb list,
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
-        sch.cancel(code)  # defuse bomb
+        timer.cancel()  # defuse bomb
         defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
         defuses += 1
         bot.db.set_nick_value(target, 'bomb_defuses', defuses)
     else:
-        sch.cancel(code)  # defuse timer, execute premature detonation
+        timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
         kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
         bot.write([kmsg])
