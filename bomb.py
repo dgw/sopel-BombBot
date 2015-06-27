@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import commands, example, NOLIMIT, rate, require_owner
+from willie.module import ADMIN, commands, example, NOLIMIT, rate, require_owner, require_privilege
 from random import choice, randint, randrange, sample
 from re import search
 from threading import Timer
@@ -74,6 +74,8 @@ def cutwire(bot, trigger):
     Tells willie to cut a wire when you've been bombed.
     """
     global bombs
+    if trigger.is_privmsg:
+        return
     target = Identifier(trigger.nick)
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire until someone bombs you, ' + target)
@@ -86,8 +88,11 @@ def cutwire(bot, trigger):
     if wirecut.lower() in ('all', 'all!'):
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
-        kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
-        bot.write([kmsg])
+        if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+            kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+            bot.write([kmsg])
+        else:
+            bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
         alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
         alls += 1
         bot.db.set_nick_value(target, 'bomb_alls', alls)
@@ -103,8 +108,11 @@ def cutwire(bot, trigger):
     else:
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
-        kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
-        bot.write([kmsg])
+        if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+            kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+            bot.write([kmsg])
+        else:
+            bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
         wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
         wrongs += 1
         bot.db.set_nick_value(target, 'bomb_wrongs', wrongs)
@@ -114,8 +122,11 @@ def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
         ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][1]) )
-    kmsg = 'KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target)
-    bot.write([kmsg])
+    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+        kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+        bot.write([kmsg])
+    else:
+        bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
     bombs.pop(target.lower())
     timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
     timeouts += 1
@@ -207,4 +218,30 @@ def unexclude(bot, trigger):
         return
     bot.db.set_nick_value(target, 'unbombable', False)
     bot.say('Marked %s as bombable again.' % target)
+
+
+@commands('bombkickoff')
+@example('.bombkickoff')
+@require_privilege(ADMIN, "Only a channel admin or greater can disable bomb kicks.")
+def nokick(bot, trigger):
+    """
+    Allows channel admins and up to disable kicking for bombs in the channel.
+    """
+    if trigger.is_privmsg:
+        return
+    bot.db.set_channel_value(trigger.sender, 'bomb_kicks', False)
+    bot.say('Bomb kicks disabled in %s.' % trigger.sender)
+
+
+@commands('bombkickon')
+@example('.bombkickon')
+@require_privilege(ADMIN, "Only a channel admin or greater can enable bomb kicks.")
+def yeskick(bot, trigger):
+    """
+    Allows channel admins and up to (re-)enable kicking for bombs in the channel.
+    """
+    if trigger.is_privmsg:
+        return
+    bot.db.set_channel_value(trigger.sender, 'bomb_kicks', True)
+    bot.say('Bomb kicks enabled in %s.' % trigger.sender)
 
