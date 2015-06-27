@@ -17,6 +17,7 @@ from willie import formatting
 colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 fuse = 120  # seconds
 fuse_text = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
+explosion_text = formatting.color('^!^!^!BOOM!^!^!^', 'red')
 bombs = dict()
 
 
@@ -89,10 +90,10 @@ def cutwire(bot, trigger):
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
         if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-            kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+            kmsg = 'KICK %s %s :%s' % (trigger.sender, target, explosion_text)
             bot.write([kmsg])
         else:
-            bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
+            bot.say('%s is dead! %s' % (target, explosion_text))
         alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
         alls += 1
         bot.db.set_nick_value(target, 'bomb_alls', alls)
@@ -109,10 +110,10 @@ def cutwire(bot, trigger):
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
         if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-            kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+            kmsg = ('KICK %s %s :%s' % (trigger.sender, target, explosion_text))
             bot.write([kmsg])
         else:
-            bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
+            bot.say('%s is dead! %s' % (target, explosion_text))
         wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
         wrongs += 1
         bot.db.set_nick_value(target, 'bomb_wrongs', wrongs)
@@ -123,10 +124,10 @@ def explode(bot, trigger):
     bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
         ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][1]) )
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-        kmsg = ('KICK %s %s :^!^!^!BOOM!^!^!^' % (trigger.sender, target))
+        kmsg = ('KICK %s %s :%s' % (trigger.sender, target, explosion_text))
         bot.write([kmsg])
     else:
-        bot.say('%s is dead! ^!^!^!BOOM!^!^!^' % target)
+        bot.say('%s is dead! %s' % (target, explosion_text))
     bombs.pop(target.lower())
     timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
     timeouts += 1
