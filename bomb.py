@@ -95,8 +95,8 @@ def cutwire(bot, trigger):
             bot.write([kmsg])
         else:
             bot.say('%s is dead! %s' % (target, explosion_text))
-        alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
-        bot.db.set_nick_value(target, 'bomb_alls', alls + 1)
+        alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
+        bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
     elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
         # Add the target back onto the bomb list
@@ -104,8 +104,8 @@ def cutwire(bot, trigger):
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
         timer.cancel()  # defuse bomb
-        defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
-        bot.db.set_nick_value(target, 'bomb_defuses', defuses + 1)
+        defuses = bot.db.get_nick_value(orig_target, 'bomb_defuses') or 0
+        bot.db.set_nick_value(orig_target, 'bomb_defuses', defuses + 1)
     else:
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
@@ -114,12 +114,13 @@ def cutwire(bot, trigger):
             bot.write([kmsg])
         else:
             bot.say('%s is dead! %s' % (target, explosion_text))
-        wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
-        bot.db.set_nick_value(target, 'bomb_wrongs', wrongs + 1)
+        wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
+        bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
 
 
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
+    orig_target = target
     if target.lower() not in bombs: # nick change happened
         for nick in bombs.keys():
             if bombs[nick][3] == target:
@@ -133,8 +134,8 @@ def explode(bot, trigger):
     else:
         bot.say('%s is dead! %s' % (target, explosion_text))
     bombs.pop(target.lower())
-    timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
-    bot.db.set_nick_value(target, 'bomb_timeouts', timeouts + 1)
+    timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
+    bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
 
 # Track nick changes
