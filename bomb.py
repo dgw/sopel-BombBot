@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from willie.module import ADMIN, commands, example, NOLIMIT, rate, require_owner, require_privilege
+from willie.module import ADMIN, commands, event, example, NOLIMIT, rate, require_owner, require_privilege, rule
 from random import choice, randint, randrange, sample
 from re import search
 from threading import Timer
@@ -64,7 +64,7 @@ def start(bot, trigger):
     bot.say(message)
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
     timer = Timer(fuse, explode, (bot, trigger))
-    bombs[target.lower()] = (wires, color, timer)
+    bombs[target.lower()] = (wires, color, timer, target)
     timer.start()
 
 
@@ -84,7 +84,8 @@ def cutwire(bot, trigger):
     if not trigger.group(2):
         bot.say('You have to choose a wire to cut.')
         return
-    wires, color, timer = bombs.pop(target.lower())  # remove target from bomb list
+    # Remove target from bomb list temporarily
+    wires, color, timer, orig_target = bombs.pop(target.lower())
     wirecut = trigger.group(2).rstrip(' ')
     if wirecut.lower() in ('all', 'all!'):
         timer.cancel()  # defuse timer, execute premature detonation
@@ -98,7 +99,8 @@ def cutwire(bot, trigger):
         bot.db.set_nick_value(target, 'bomb_alls', alls + 1)
     elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
-        bombs[target.lower()] = (wires, color, timer)  # Add the target back onto the bomb list,
+        # Add the target back onto the bomb list
+        bombs[target.lower()] = (wires, color, timer, orig_target)
     elif wirecut.capitalize() == color:
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
         timer.cancel()  # defuse bomb
@@ -118,6 +120,11 @@ def cutwire(bot, trigger):
 
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
+    if target.lower() not in bombs: # nick change happened
+        for nick in bombs.keys():
+            if bombs[nick][3] == target:
+                target = Identifier(nick)
+                break
     bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
         ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][1]) )
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
@@ -128,6 +135,16 @@ def explode(bot, trigger):
     bombs.pop(target.lower())
     timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
     bot.db.set_nick_value(target, 'bomb_timeouts', timeouts + 1)
+
+
+# Track nick changes
+@event('NICK')
+@rule('.*')
+def bomb_glue(bot, trigger):
+    old = trigger.nick
+    new = Identifier(trigger)
+    if old.lower() in bombs:
+        bombs[new.lower()] = bombs.pop(old.lower())
 
 
 @commands('bombstats')
