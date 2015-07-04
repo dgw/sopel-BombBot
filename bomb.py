@@ -95,8 +95,7 @@ def cutwire(bot, trigger):
         else:
             bot.say('%s is dead! %s' % (target, explosion_text))
         alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
-        alls += 1
-        bot.db.set_nick_value(target, 'bomb_alls', alls)
+        bot.db.set_nick_value(target, 'bomb_alls', alls + 1)
     elif wirecut.capitalize() not in wires:
         bot.say('That wire isn\'t here, ' + target + '! You sure you\'re picking the right one?')
         bombs[target.lower()] = (wires, color, timer)  # Add the target back onto the bomb list,
@@ -104,8 +103,7 @@ def cutwire(bot, trigger):
         bot.say('You did it, ' + target + '! I\'ll be honest, I thought you were dead. But nope, you did it. You picked the right one. Well done.')
         timer.cancel()  # defuse bomb
         defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
-        defuses += 1
-        bot.db.set_nick_value(target, 'bomb_defuses', defuses)
+        bot.db.set_nick_value(target, 'bomb_defuses', defuses + 1)
     else:
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
@@ -115,8 +113,7 @@ def cutwire(bot, trigger):
         else:
             bot.say('%s is dead! %s' % (target, explosion_text))
         wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
-        wrongs += 1
-        bot.db.set_nick_value(target, 'bomb_wrongs', wrongs)
+        bot.db.set_nick_value(target, 'bomb_wrongs', wrongs + 1)
 
 
 def explode(bot, trigger):
@@ -130,8 +127,7 @@ def explode(bot, trigger):
         bot.say('%s is dead! %s' % (target, explosion_text))
     bombs.pop(target.lower())
     timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
-    timeouts += 1
-    bot.db.set_nick_value(target, 'bomb_timeouts', timeouts)
+    bot.db.set_nick_value(target, 'bomb_timeouts', timeouts + 1)
 
 
 @commands('bombstats')
