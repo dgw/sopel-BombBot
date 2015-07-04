@@ -90,11 +90,7 @@ def cutwire(bot, trigger):
     if wirecut.lower() in ('all', 'all!'):
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
-        if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-            kmsg = 'KICK %s %s :%s' % (trigger.sender, target, explosion_text)
-            bot.write([kmsg])
-        else:
-            bot.say('%s is dead! %s' % (target, explosion_text))
+        kickboom(bot, trigger, target)
         alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
         bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
     elif wirecut.capitalize() not in wires:
@@ -109,11 +105,7 @@ def cutwire(bot, trigger):
     else:
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Nope, wrong wire! Aww, now you\'ve gone and killed yourself. Wow. Sorry. (You should\'ve picked the %s wire.)' % color)
-        if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-            kmsg = ('KICK %s %s :%s' % (trigger.sender, target, explosion_text))
-            bot.write([kmsg])
-        else:
-            bot.say('%s is dead! %s' % (target, explosion_text))
+        kickboom(bot, trigger, target)
         wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
         bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
 
@@ -128,14 +120,19 @@ def explode(bot, trigger):
                 break
     bot.say('%s pls, you could\'ve at least picked one! Now you\'re dead. You see that? Guts, all over the place.' \
         ' (You should\'ve picked the %s wire.)' % (target, bombs[target.lower()][1]) )
-    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-        kmsg = ('KICK %s %s :%s' % (trigger.sender, target, explosion_text))
-        bot.write([kmsg])
-    else:
-        bot.say('%s is dead! %s' % (target, explosion_text))
+    kickboom(bot, trigger, target)
     bombs.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
+
+
+# helper function
+def kickboom(bot, trigger, target):
+    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+        kmsg = 'KICK %s %s :%s' % (trigger.sender, target, explosion_text)
+        bot.write([kmsg])
+    else:
+        bot.say('%s is dead! %s' % (target, explosion_text))
 
 
 # Track nick changes
