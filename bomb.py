@@ -259,3 +259,30 @@ def yeskick(bot, trigger):
     bot.db.set_channel_value(trigger.sender, 'bomb_kicks', True)
     bot.say('Bomb kicks enabled in %s.' % trigger.sender)
 
+
+@commands('bombnickmerge')
+@require_owner()
+@example('.bombnickmerge newbie into old_friend')
+def is_really(bot, trigger):
+    """
+    Merge the two nicks, keeping the stats for the second one.
+    """
+    duplicate = trigger.group(3) or None
+    primary = trigger.group(5) or None
+    if not primary or not duplicate or trigger.group(4).lower() != 'into':
+        bot.reply("I want to be sure there are no mistakes here. Please specify nicks to merge " \
+                  "as: <duplicate> into <primary>")
+        return
+    duplicate = Identifier(duplicate)
+    primary = Identifier(primary)
+    newstats = dict()
+    for stat in ('bomb_wrongs', 'bomb_timeouts', 'bomb_defuses', 'bomb_alls'):
+        dupval = bot.db.get_nick_value(duplicate, stat) or 0
+        prival = bot.db.get_nick_value(primary, stat) or 0
+        newstats[stat] = dupval + prival
+    for stat in newstats:
+        bot.db.set_nick_value(primary, stat, newstats[stat])
+        bot.db.set_nick_value(duplicate, stat, 0) # because willie < 6.0 doesn't merge properly
+    bot.db.merge_nick_groups(primary, duplicate)
+    bot.say('Merged %s into %s.' % (duplicate, primary))
+
