@@ -5,6 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
+from __future__ import division
 from willie.module import ADMIN, commands, event, example, NOLIMIT, rate, require_owner, require_privilege, rule
 from random import choice, randint, randrange, sample
 from re import search
@@ -16,7 +17,7 @@ from willie import formatting
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 fuse = 120  # seconds
-fuse_text = '%d minute' % (fuse / 60) if (fuse % 60) == 0 else ('%d second' % fuse)
+fuse_text = '%d minute' % (fuse // 60) if (fuse % 60) == 0 else ('%d second' % fuse)
 explosion_text = formatting.color('^!^!^!BOOM!^!^!^', 'red')
 bombs = dict()
 
@@ -168,6 +169,7 @@ def bombstats(bot, trigger):
             msg += ' Maybe you should be the first, %s. =3' % trigger.nick
         bot.say(msg)
         return
+    success_rate = defuses / total * 100
     wrongs += alls # merely a presentation decision
     # grammar shit
     g_wrongs = 'time' if wrongs == 1 else 'times'
@@ -178,6 +180,7 @@ def bombstats(bot, trigger):
            % (target, defuses, g_defuses, wrongs, g_wrongs, timeouts, g_timeouts)
     if alls:
         msg += ' (%d of the failures %s from not giving a fuck and cutting ALL the wires!)' % (alls, g_alls)
+    msg += ' Success rate: %.1f%%' % success_rate
     bot.say(msg)
 
 
