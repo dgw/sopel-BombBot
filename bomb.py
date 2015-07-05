@@ -145,9 +145,9 @@ def bomb_glue(bot, trigger):
         bombs[new.lower()] = bombs.pop(old.lower())
 
 
-@commands('bombstats')
+@commands('bombstats','bombs')
 @example('.bombstats')
-@example('.bombstats myfriend')
+@example('.bombs myfriend')
 def bombstats(bot, trigger):
     """
     Get bomb stats for yourself or another user.
