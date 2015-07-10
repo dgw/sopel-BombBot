@@ -70,6 +70,8 @@ def start(bot, trigger):
     timer = Timer(fuse, explode, (bot, trigger))
     bombs[target.lower()] = (wires, color, timer, target)
     timer.start()
+    bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
+    bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
 
 
 @commands('cutwire')
@@ -165,11 +167,14 @@ def bombstats(bot, trigger):
     defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
     alls = bot.db.get_nick_value(target, 'bomb_alls') or 0
     total = wrongs + timeouts + defuses + alls
+    planted = bot.db.get_nick_value(target, 'bombs_planted') or 0
     # short-circuit if user has no stats
     if total == 0:
         msg = 'Nobody bombed %s yet!' % target
         if target != trigger.nick:
             msg += ' Maybe you should be the first, %s. =3' % trigger.nick
+        if planted:
+            msg += ' Bombs planted: %d' % planted
         bot.say(msg)
         return
     success_rate = defuses / total * 100
@@ -184,6 +189,8 @@ def bombstats(bot, trigger):
     if alls:
         msg += ' (%d of the failures %s from not giving a fuck and cutting ALL the wires!)' % (alls, g_alls)
     msg += ' Success rate: %.1f%%' % success_rate
+    if planted:
+        msg += ' Bombs planted: %d' % planted
     bot.say(msg)
 
 
@@ -306,7 +313,7 @@ def is_really(bot, trigger):
     duplicate = Identifier(duplicate)
     primary = Identifier(primary)
     newstats = dict()
-    for stat in ('bomb_wrongs', 'bomb_timeouts', 'bomb_defuses', 'bomb_alls'):
+    for stat in ('bomb_wrongs', 'bomb_timeouts', 'bomb_defuses', 'bomb_alls', 'bombs_planted'):
         dupval = bot.db.get_nick_value(duplicate, stat) or 0
         prival = bot.db.get_nick_value(primary, stat) or 0
         newstats[stat] = dupval + prival
