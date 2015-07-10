@@ -36,6 +36,9 @@ def start(bot, trigger):
     if not trigger.sender.startswith('#'):
         bot.say('You can only bomb someone in a channel.')
         return NOLIMIT
+    if bot.db.get_channel_value(trigger.sender, 'bombs_disabled'):
+        bot.notice('An admin has disabled bombing in %s.' % trigger.sender, trigger.nick)
+        return NOLIMIT
     global bombs
     target = Identifier(trigger.group(3))
     if target == bot.nick:
@@ -259,6 +262,32 @@ def yeskick(bot, trigger):
         return
     bot.db.set_channel_value(trigger.sender, 'bomb_kicks', True)
     bot.say('Bomb kicks enabled in %s.' % trigger.sender)
+
+
+@commands('bombsoff')
+@example('.bombsoff')
+@require_privilege(ADMIN, "Only a channel admin or greater can disable bombing in this channel.")
+def bombnazi(bot, trigger):
+    """
+    Allows channel admins and up to disable bombing entirely in the current channel.
+    """
+    if trigger.is_privmsg:
+        return
+    bot.db.set_channel_value(trigger.sender, 'bombs_disabled', True)
+    bot.say('Bombs disabled in %s.' % trigger.sender)
+
+
+@commands('bombson')
+@example('.bombson')
+@require_privilege(ADMIN, "Only a channel admin or greater can enable bombing in this channel.")
+def bomboprah(bot, trigger):
+    """
+    Allows channel admins and up to (re-)enable bombing in the current channel.
+    """
+    if trigger.is_privmsg:
+        return
+    bot.db.set_channel_value(trigger.sender, 'bombs_disabled', False)
+    bot.say('Bombs enabled in %s.' % trigger.sender)
 
 
 @commands('bombnickmerge')
