@@ -87,12 +87,12 @@ def cutwire(bot, trigger):
     if target.lower() != bot.nick.lower() and target.lower() not in bombs:
         bot.say('You can\'t cut a wire until someone bombs you, ' + target)
         return
-    if not trigger.group(2):
+    if not trigger.group(3):
         bot.say('You have to choose a wire to cut.')
         return
     # Remove target from bomb list temporarily
     wires, color, timer, orig_target = bombs.pop(target.lower())
-    wirecut = trigger.group(2).rstrip(' ')
+    wirecut = trigger.group(3)
     if wirecut.lower() in ('all', 'all!'):
         timer.cancel()  # defuse timer, execute premature detonation
         bot.say('Cutting ALL the wires! (You should\'ve picked the %s wire.)' % color)
@@ -158,10 +158,10 @@ def bombstats(bot, trigger):
     """
     Get bomb stats for yourself or another user.
     """
-    if not trigger.group(2):
+    if not trigger.group(3):
         target = Identifier(trigger.nick)
     else:
-        target = Identifier(trigger.group(2))
+        target = Identifier(trigger.group(3))
     wrongs = bot.db.get_nick_value(target, 'bomb_wrongs') or 0
     timeouts = bot.db.get_nick_value(target, 'bomb_timeouts') or 0
     defuses = bot.db.get_nick_value(target, 'bomb_defuses') or 0
@@ -201,10 +201,10 @@ def statreset(bot, trigger):
     """
     Reset a given user's bomb stats (e.g. after abuse)
     """
-    if not trigger.group(2):
+    if not trigger.group(3):
         bot.say('Whose bomb stats do you want me to reset?')
         return
-    target = trigger.group(2)
+    target = Identifier(trigger.group(3))
     keys = ['bomb_wrongs', 'bomb_defuses', 'bomb_timeouts', 'bomb_alls']
     for key in keys:
         bot.db.set_nick_value(target, key, 0)
@@ -217,10 +217,10 @@ def exclude(bot, trigger):
     """
     Disable bombing yourself (admins: or another user)
     """
-    if not trigger.group(2):
+    if not trigger.group(3):
         target = trigger.nick
     else:
-        target = Identifier(trigger.group(2))
+        target = Identifier(trigger.group(3))
     if not trigger.admin and target != trigger.nick:
         bot.say('Only bot admins can exclude other users.')
         return
@@ -234,10 +234,10 @@ def unexclude(bot, trigger):
     """
     Re-enable bombing yourself (admins: or another user)
     """
-    if not trigger.group(2):
+    if not trigger.group(3):
         target = trigger.nick
     else:
-        target = Identifier(trigger.group(2))
+        target = Identifier(trigger.group(3))
     if not trigger.admin and target != trigger.nick:
         bot.say('Only bot admins can unexclude other users.')
         return
