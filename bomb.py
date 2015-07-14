@@ -152,6 +152,7 @@ def bomb_glue(bot, trigger):
     new = Identifier(trigger)
     if old.lower() in bombs:
         bombs[new.lower()] = bombs.pop(old.lower())
+        bot.notice("There's still a bomb in your pants, %s!" % new, new)
 
 
 @commands('bombstats','bombs')
