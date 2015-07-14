@@ -209,7 +209,7 @@ def statreset(bot, trigger):
         bot.say('Whose bomb stats do you want me to reset?')
         return
     target = Identifier(trigger.group(3))
-    keys = ['bomb_wrongs', 'bomb_defuses', 'bomb_timeouts', 'bomb_alls']
+    keys = ['bomb_wrongs', 'bomb_defuses', 'bomb_timeouts', 'bomb_alls', 'bombs_planted']
     for key in keys:
         bot.db.set_nick_value(target, key, 0)
     bot.say('Bomb stats for %s reset.' % target)
