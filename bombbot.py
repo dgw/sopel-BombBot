@@ -14,12 +14,12 @@ from threading import Timer
 import time
 
 # code below relies on colors being at least 3 elements long
-colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
-fuse = 120  # seconds
-timeout = 600
-fuse_text = "%d minute" % (fuse // 60) if (fuse % 60) == 0 else ("%d second" % fuse)
-explosion_text = formatting.color("^!^!^!BOOM!^!^!^", 'red')
-bombs = dict()
+COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
+FUSE = 120  # seconds
+TIMEOUT = 600
+FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
+EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
+BOMBS = dict()
 
 
 @commands('bomb')
@@ -37,16 +37,16 @@ def start(bot, trigger):
         bot.notice("An admin has disabled bombing in %s." % trigger.sender, trigger.nick)
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
-    if since_last < timeout and not trigger.admin:
-        bot.notice("You must wait %.0f seconds before you can bomb someone again." % (timeout - since_last),
+    if since_last < TIMEOUT and not trigger.admin:
+        bot.notice("You must wait %.0f seconds before you can bomb someone again." % (TIMEOUT - since_last),
                    trigger.nick)
         return
-    global bombs
+    global BOMBS
     target = Identifier(trigger.group(3))
     if target == bot.nick:
         bot.say("You thought you could trick me into bombing myself?!")
         return NOLIMIT
-    if target.lower() in bombs:
+    if target.lower() in BOMBS:
         bot.say("I can't fit another bomb in %s's pants!" % target)
         return NOLIMIT
     if target == trigger.nick:
@@ -61,7 +61,7 @@ def start(bot, trigger):
     if bot.db.get_nick_value(trigger.nick, 'unbombable') and not trigger.admin:
         bot.say("Try again when you're bombable yourself, %s." % trigger.nick)
         return NOLIMIT
-    wires = [colors[i] for i in sorted(sample(xrange(len(colors)), randrange(3, 5)))]
+    wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
     num_wires = len(wires)
     wires_list = [formatting.color(str(wire), str(wire)) for wire in wires]
     wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
@@ -69,10 +69,10 @@ def start(bot, trigger):
     color = choice(wires)
     bot.say("Hey, %s! I think there's a bomb in your pants. %s timer, %d wires: %s. "
             "Which wire would you like to cut? (respond with %scutwire color)"
-            % (target, fuse_text, num_wires, wires_list, bot.config.core.help_prefix or '.'))
+            % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
-    timer = Timer(fuse, explode, (bot, trigger))
-    bombs[target.lower()] = (wires, color, timer, target)
+    timer = Timer(FUSE, explode, (bot, trigger))
+    BOMBS[target.lower()] = (wires, color, timer, target)
     timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
@@ -86,16 +86,16 @@ def cutwire(bot, trigger):
     """
     Tells willie to cut a wire when you've been bombed.
     """
-    global bombs
+    global BOMBS
     target = Identifier(trigger.nick)
-    if target.lower() != bot.nick.lower() and target.lower() not in bombs:
+    if target.lower() != bot.nick.lower() and target.lower() not in BOMBS:
         bot.say("You can't cut a wire until someone bombs you, %s." % target)
         return
     if not trigger.group(3):
         bot.say("You have to choose a wire to cut.")
         return
     # Remove target from bomb list temporarily
-    wires, color, timer, orig_target = bombs.pop(target.lower())
+    wires, color, timer, orig_target = BOMBS.pop(target.lower())
     wirecut = trigger.group(3)
     if wirecut.lower() in ('all', 'all!'):
         timer.cancel()  # defuse timer, execute premature detonation
@@ -106,7 +106,7 @@ def cutwire(bot, trigger):
     elif wirecut.capitalize() not in wires:
         bot.say("That wire isn't here, %s! You sure you're picking the right one?" % target)
         # Add the target back onto the bomb list
-        bombs[target.lower()] = (wires, color, timer, orig_target)
+        BOMBS[target.lower()] = (wires, color, timer, orig_target)
     elif wirecut.capitalize() == color:
         bot.say("You did it, %s! I'll be honest, I thought you were dead. "
                 "But nope, you did it. You picked the right one. Well done." % target)
@@ -125,16 +125,16 @@ def cutwire(bot, trigger):
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     orig_target = target
-    if target.lower() not in bombs:  # nick change happened
-        for nick in bombs.keys():
-            if bombs[nick][3] == target:
+    if target.lower() not in BOMBS:  # nick change happened
+        for nick in BOMBS.keys():
+            if BOMBS[nick][3] == target:
                 target = Identifier(nick)
                 break
     bot.say("%s pls, you could've at least picked one! Now you're dead. You see that? "
             "Guts, all over the place. (You should've picked the %s wire.)" %
-            (target, bombs[target.lower()][1]))
+            (target, BOMBS[target.lower()][1]))
     kickboom(bot, trigger, target)
-    bombs.pop(target.lower())
+    BOMBS.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
@@ -142,10 +142,10 @@ def explode(bot, trigger):
 # helper functions
 def kickboom(bot, trigger, target):
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
-        kmsg = "KICK %s %s :%s" % (trigger.sender, target, explosion_text)
+        kmsg = "KICK %s %s :%s" % (trigger.sender, target, EXPLOSION_TEXT)
         bot.write([kmsg])
     else:
-        bot.say("%s is dead! %s" % (target, explosion_text))
+        bot.say("%s is dead! %s" % (target, EXPLOSION_TEXT))
 
 
 def time_since_bomb(bot, nick):
@@ -160,8 +160,8 @@ def time_since_bomb(bot, nick):
 def bomb_glue(bot, trigger):
     old = trigger.nick
     new = Identifier(trigger)
-    if old.lower() in bombs:
-        bombs[new.lower()] = bombs.pop(old.lower())
+    if old.lower() in BOMBS:
+        BOMBS[new.lower()] = BOMBS.pop(old.lower())
         bot.notice("There's still a bomb in your pants, %s!" % new, new)
 
 
