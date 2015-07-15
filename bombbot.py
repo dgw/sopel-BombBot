@@ -233,6 +233,11 @@ def exclude(bot, trigger):
     """
     if not trigger.group(3):
         target = trigger.nick
+        time_since = time_since_bomb(bot, target)
+        if time_since < TIMEOUT:
+            bot.reply(
+                "You recently planted a bomb, and must remain bombable for %.0f more seconds." % (TIMEOUT - time_since))
+            return
     else:
         target = Identifier(trigger.group(3))
     if not trigger.admin and target != trigger.nick:
