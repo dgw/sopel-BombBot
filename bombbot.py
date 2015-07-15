@@ -58,7 +58,7 @@ def start(bot, trigger):
     if bot.db.get_nick_value(Identifier(target), 'unbombable') and not trigger.admin:
         bot.say("I'm not allowed to bomb %s, sorry." % target)
         return NOLIMIT
-    if bot.db.get_nick_value(trigger.nick, 'unbombable') and not trigger.admin:
+    if bot.db.get_nick_value(trigger.nick, 'unbombable'):
         bot.say("Try again when you're bombable yourself, %s." % trigger.nick)
         return NOLIMIT
     wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
