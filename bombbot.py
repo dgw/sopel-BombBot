@@ -11,17 +11,18 @@ from willie.tools import Identifier
 from willie import formatting
 from random import choice, randrange, sample
 from threading import Timer
+import time
 
 # code below relies on colors being at least 3 elements long
 colors = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 fuse = 120  # seconds
+timeout = 600
 fuse_text = "%d minute" % (fuse // 60) if (fuse % 60) == 0 else ("%d second" % fuse)
 explosion_text = formatting.color("^!^!^!BOOM!^!^!^", 'red')
 bombs = dict()
 
 
 @commands('bomb')
-@rate(600)
 @example(".bomb nicky")
 @require_chanmsg
 def start(bot, trigger):
@@ -35,6 +36,11 @@ def start(bot, trigger):
     if bot.db.get_channel_value(trigger.sender, 'bombs_disabled'):
         bot.notice("An admin has disabled bombing in %s." % trigger.sender, trigger.nick)
         return NOLIMIT
+    since_last = time_since_bomb(bot, trigger.nick)
+    if since_last < timeout and not trigger.admin:
+        bot.notice("You must wait %.0f seconds before you can bomb someone again." % (timeout - since_last),
+                   trigger.nick)
+        return
     global bombs
     target = Identifier(trigger.group(3))
     if target == bot.nick:
@@ -70,6 +76,7 @@ def start(bot, trigger):
     timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
+    bot.db.set_nick_value(trigger.nick, 'bomb_last_planted', time.time())
 
 
 @commands('cutwire')
@@ -132,13 +139,19 @@ def explode(bot, trigger):
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
 
-# helper function
+# helper functions
 def kickboom(bot, trigger, target):
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
         kmsg = "KICK %s %s :%s" % (trigger.sender, target, explosion_text)
         bot.write([kmsg])
     else:
         bot.say("%s is dead! %s" % (target, explosion_text))
+
+
+def time_since_bomb(bot, nick):
+    now = time.time()
+    last = bot.db.get_nick_value(nick, 'bomb_last_planted') or 0
+    return abs(last - now)
 
 
 # Track nick changes
