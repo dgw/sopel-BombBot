@@ -141,7 +141,7 @@ def explode(bot, trigger):
 
 # helper functions
 def kickboom(bot, trigger, target):
-    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks') and not bot.db.get_nick_value(target, 'unbombable'):
         kmsg = "KICK %s %s :%s" % (trigger.sender, target, EXPLOSION_TEXT)
         bot.write([kmsg])
     else:
