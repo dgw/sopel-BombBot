@@ -43,6 +43,7 @@ def start(bot, trigger):
         return
     global BOMBS
     target = Identifier(trigger.group(3))
+    target_unbombable = bot.db.get_nick_value(target, 'unbombable')
     if target == bot.nick:
         bot.say("You thought you could trick me into bombing myself?!")
         return NOLIMIT
@@ -55,7 +56,7 @@ def start(bot, trigger):
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
         bot.say("You can't bomb imaginary people!")
         return NOLIMIT
-    if bot.db.get_nick_value(Identifier(target), 'unbombable') and not trigger.admin:
+    if target_unbombable and not trigger.admin:
         bot.say("I'm not allowed to bomb %s, sorry." % target)
         return NOLIMIT
     if bot.db.get_nick_value(trigger.nick, 'unbombable'):
@@ -71,6 +72,8 @@ def start(bot, trigger):
             "Which wire would you like to cut? (respond with %scutwire color)"
             % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
     bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
+    if target_unbombable:
+        bot.notice("Just so you know, %s is marked as unbombable." % target, trigger.nick)
     timer = Timer(FUSE, explode, (bot, trigger))
     BOMBS[target.lower()] = (wires, color, timer, target)
     timer.start()
