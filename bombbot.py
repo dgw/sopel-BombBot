@@ -238,8 +238,9 @@ def exclude(bot, trigger):
         target = trigger.nick
         time_since = time_since_bomb(bot, target)
         if time_since < TIMEOUT:
-            bot.reply(
-                "You recently planted a bomb, and must remain bombable for %.0f more seconds." % (TIMEOUT - time_since))
+            bot.notice(
+                "You recently planted a bomb, and must remain bombable for %.0f more seconds." % (TIMEOUT - time_since),
+                target)
             return
     else:
         target = Identifier(trigger.group(3))
