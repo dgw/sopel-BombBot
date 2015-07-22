@@ -19,7 +19,7 @@ FUSE = 120  # seconds
 TIMEOUT = 600
 FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
 EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
-BOMBS = dict()
+BOMBS = {}
 
 
 @commands('bomb')
