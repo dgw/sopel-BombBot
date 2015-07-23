@@ -10,7 +10,7 @@ from willie.module import *
 from willie.tools import Identifier
 from willie import formatting
 from random import choice, randrange, sample
-from threading import Timer
+from threading import Timer, RLock
 import time
 
 # code below relies on colors being at least 3 elements long
@@ -20,6 +20,7 @@ TIMEOUT = 600
 FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
 EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
 BOMBS = {}
+lock = RLock()
 
 
 @commands('bomb')
@@ -47,9 +48,6 @@ def start(bot, trigger):
     if target == bot.nick:
         bot.say("You thought you could trick me into bombing myself?!")
         return NOLIMIT
-    if target.lower() in BOMBS:
-        bot.say("I can't fit another bomb in %s's pants!" % target)
-        return NOLIMIT
     if target == trigger.nick:
         bot.say("%s pls. Bomb a friend if you have to!" % trigger.nick)
         return NOLIMIT
@@ -62,21 +60,25 @@ def start(bot, trigger):
     if bot.db.get_nick_value(trigger.nick, 'unbombable'):
         bot.say("Try again when you're bombable yourself, %s." % trigger.nick)
         return NOLIMIT
-    wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
-    num_wires = len(wires)
-    wires_list = [formatting.color(str(wire), str(wire)) for wire in wires]
-    wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
-    wires = [wire.replace('Light_', '') for wire in wires]
-    color = choice(wires)
-    bot.say("Hey, %s! I think there's a bomb in your pants. %s timer, %d wires: %s. "
-            "Which wire would you like to cut? (respond with %scutwire color)"
-            % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
-    bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
-    if target_unbombable:
-        bot.notice("Just so you know, %s is marked as unbombable." % target, trigger.nick)
-    timer = Timer(FUSE, explode, (bot, trigger))
-    BOMBS[target.lower()] = (wires, color, timer, target)
-    timer.start()
+    with lock:
+        if target.lower() in BOMBS:
+            bot.say("I can't fit another bomb in %s's pants!" % target)
+            return NOLIMIT
+        wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
+        num_wires = len(wires)
+        wires_list = [formatting.color(str(wire), str(wire)) for wire in wires]
+        wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
+        wires = [wire.replace('Light_', '') for wire in wires]
+        color = choice(wires)
+        bot.say("Hey, %s! I think there's a bomb in your pants. %s timer, %d wires: %s. "
+                "Which wire would you like to cut? (respond with %scutwire color)"
+                % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
+        bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
+        if target_unbombable:
+            bot.notice("Just so you know, %s is marked as unbombable." % target, trigger.nick)
+        timer = Timer(FUSE, explode, (bot, trigger))
+        BOMBS[target.lower()] = (wires, color, timer, target)
+        timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
     bot.db.set_nick_value(trigger.nick, 'bomb_last_planted', time.time())
@@ -91,53 +93,55 @@ def cutwire(bot, trigger):
     """
     global BOMBS
     target = Identifier(trigger.nick)
-    if target.lower() != bot.nick.lower() and target.lower() not in BOMBS:
-        bot.say("You can't cut a wire until someone bombs you, %s." % target)
-        return
-    if not trigger.group(3):
-        bot.say("You have to choose a wire to cut.")
-        return
-    # Remove target from bomb list temporarily
-    wires, color, timer, orig_target = BOMBS.pop(target.lower())
-    wirecut = trigger.group(3)
-    if wirecut.lower() in ('all', 'all!'):
-        timer.cancel()  # defuse timer, execute premature detonation
-        bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
-        kickboom(bot, trigger, target)
-        alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
-        bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
-    elif wirecut.capitalize() not in wires:
-        bot.say("That wire isn't here, %s! You sure you're picking the right one?" % target)
-        # Add the target back onto the bomb list
-        BOMBS[target.lower()] = (wires, color, timer, orig_target)
-    elif wirecut.capitalize() == color:
-        bot.say("You did it, %s! I'll be honest, I thought you were dead. "
-                "But nope, you did it. You picked the right one. Well done." % target)
-        timer.cancel()  # defuse bomb
-        defuses = bot.db.get_nick_value(orig_target, 'bomb_defuses') or 0
-        bot.db.set_nick_value(orig_target, 'bomb_defuses', defuses + 1)
-    else:
-        timer.cancel()  # defuse timer, execute premature detonation
-        bot.say("Nope, wrong wire! Aww, now you've gone and killed yourself. "
-                "Wow. Sorry. (You should've picked the %s wire.)" % color)
-        kickboom(bot, trigger, target)
-        wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
-        bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
+    with lock:
+        if target.lower() != bot.nick.lower() and target.lower() not in BOMBS:
+            bot.say("You can't cut a wire until someone bombs you, %s." % target)
+            return
+        if not trigger.group(3):
+            bot.say("You have to choose a wire to cut.")
+            return
+        # Remove target from bomb list temporarily
+        wires, color, timer, orig_target = BOMBS.pop(target.lower())
+        wirecut = trigger.group(3)
+        if wirecut.lower() in ('all', 'all!'):
+            timer.cancel()  # defuse timer, execute premature detonation
+            bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
+            kickboom(bot, trigger, target)
+            alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
+            bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
+        elif wirecut.capitalize() not in wires:
+            bot.say("That wire isn't here, %s! You sure you're picking the right one?" % target)
+            # Add the target back onto the bomb list
+            BOMBS[target.lower()] = (wires, color, timer, orig_target)
+        elif wirecut.capitalize() == color:
+            bot.say("You did it, %s! I'll be honest, I thought you were dead. "
+                    "But nope, you did it. You picked the right one. Well done." % target)
+            timer.cancel()  # defuse bomb
+            defuses = bot.db.get_nick_value(orig_target, 'bomb_defuses') or 0
+            bot.db.set_nick_value(orig_target, 'bomb_defuses', defuses + 1)
+        else:
+            timer.cancel()  # defuse timer, execute premature detonation
+            bot.say("Nope, wrong wire! Aww, now you've gone and killed yourself. "
+                    "Wow. Sorry. (You should've picked the %s wire.)" % color)
+            kickboom(bot, trigger, target)
+            wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
+            bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
 
 
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     orig_target = target
-    if target.lower() not in BOMBS:  # nick change happened
-        for nick in BOMBS.keys():
-            if BOMBS[nick][3] == target:
-                target = Identifier(nick)
-                break
-    bot.say("%s pls, you could've at least picked one! Now you're dead. You see that? "
-            "Guts, all over the place. (You should've picked the %s wire.)" %
-            (target, BOMBS[target.lower()][1]))
-    kickboom(bot, trigger, target)
-    BOMBS.pop(target.lower())
+    with lock:
+        if target.lower() not in BOMBS:  # nick change happened
+            for nick in BOMBS.keys():
+                if BOMBS[nick][3] == target:
+                    target = Identifier(nick)
+                    break
+        bot.say("%s pls, you could've at least picked one! Now you're dead. You see that? "
+                "Guts, all over the place. (You should've picked the %s wire.)" %
+                (target, BOMBS[target.lower()][1]))
+        kickboom(bot, trigger, target)
+        BOMBS.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
@@ -163,9 +167,10 @@ def time_since_bomb(bot, nick):
 def bomb_glue(bot, trigger):
     old = trigger.nick
     new = Identifier(trigger)
-    if old.lower() in BOMBS:
-        BOMBS[new.lower()] = BOMBS.pop(old.lower())
-        bot.notice("There's still a bomb in your pants, %s!" % new, new)
+    with lock:
+        if old.lower() in BOMBS:
+            BOMBS[new.lower()] = BOMBS.pop(old.lower())
+            bot.notice("There's still a bomb in your pants, %s!" % new, new)
 
 
 @commands('bombstats', 'bombs')
