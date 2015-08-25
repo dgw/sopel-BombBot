@@ -11,7 +11,7 @@ from willie.tools import Identifier
 from willie import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
-import time
+import time, random
 
 # code below relies on colors being at least 3 elements long
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
@@ -19,6 +19,7 @@ FUSE = 120  # seconds
 TIMEOUT = 600
 FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
 EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
+EXPLOSION_RANDOM = True if random.randrange(1,100) <= 10 else False # 10% of imminent explosion regardless of wire 
 BOMBS = {}
 lock = RLock()
 
@@ -103,9 +104,14 @@ def cutwire(bot, trigger):
         # Remove target from bomb list temporarily
         wires, color, timer, orig_target = BOMBS.pop(target.lower())
         wirecut = trigger.group(3)
-        if wirecut.lower() in ('all', 'all!'):
+        if wirecut.lower() in ('all', 'all!') or EXPLOSION_RANDOM:
             timer.cancel()  # defuse timer, execute premature detonation
-            bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
+            
+            if EXPLOSION_RANDOM:
+                bot.say("Bomb exploded regardless of your wire choice! I'm sorry that you were so unlucky!")
+            else:
+                bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
+
             kickboom(bot, trigger, target)
             alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
             bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
