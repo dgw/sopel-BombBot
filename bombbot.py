@@ -11,7 +11,7 @@ from willie.tools import Identifier
 from willie import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
-import time, random
+import time
 
 # code below relies on colors being at least 3 elements long
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
