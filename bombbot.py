@@ -19,7 +19,6 @@ FUSE = 120  # seconds
 TIMEOUT = 600
 FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
 EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
-EXPLOSION_RANDOM = True if random.randrange(1,100) <= 10 else False # 10% of imminent explosion regardless of wire 
 BOMBS = {}
 lock = RLock()
 
@@ -75,10 +74,14 @@ def start(bot, trigger):
                 "Which wire would you like to cut? (respond with %scutwire color)"
                 % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
         bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
+        
+        # 10% of imminent explosion regardless of wire 
+        explosion_random = True if random.randrange(1,100) <= 10 else False
+        
         if target_unbombable:
             bot.notice("Just so you know, %s is marked as unbombable." % target, trigger.nick)
         timer = Timer(FUSE, explode, (bot, trigger))
-        BOMBS[target.lower()] = (wires, color, timer, target)
+        BOMBS[target.lower()] = (wires, color, timer, target, explosion_random)
         timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
@@ -102,12 +105,13 @@ def cutwire(bot, trigger):
             bot.say("You have to choose a wire to cut.")
             return
         # Remove target from bomb list temporarily
-        wires, color, timer, orig_target = BOMBS.pop(target.lower())
+        wires, color, timer, orig_target, explosion_random = BOMBS.pop(target.lower())
         wirecut = trigger.group(3)
-        if wirecut.lower() in ('all', 'all!') or EXPLOSION_RANDOM:
+        
+        if wirecut.lower() in ('all', 'all!') or explosion_random:
             timer.cancel()  # defuse timer, execute premature detonation
             
-            if EXPLOSION_RANDOM:
+            if explosion_random:
                 bot.say("Bomb exploded regardless of your wire choice! I'm sorry that you were so unlucky!")
             else:
                 bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
@@ -118,7 +122,7 @@ def cutwire(bot, trigger):
         elif wirecut.capitalize() not in wires:
             bot.say("That wire isn't here, %s! You sure you're picking the right one?" % target)
             # Add the target back onto the bomb list
-            BOMBS[target.lower()] = (wires, color, timer, orig_target)
+            BOMBS[target.lower()] = (wires, color, timer, orig_target, explosion_random)
         elif wirecut.capitalize() == color:
             bot.say("You did it, %s! I'll be honest, I thought you were dead. "
                     "But nope, you did it. You picked the right one. Well done." % target)
