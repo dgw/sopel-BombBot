@@ -18,7 +18,61 @@ COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purpl
 FUSE = 120  # seconds
 TIMEOUT = 600
 FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
-EXPLOSION_TEXT = formatting.color("^!^!^!BOOM!^!^!^", 'red')
+
+STRINGS = {
+    'TARGET_MISSING':         "Who do you want to bomb?",
+    'CHANNEL_DISABLED':       "An admin has disabled bombing in %s.",
+    'TIMEOUT_REMAINING':      "You must wait %.0f seconds before you can bomb someone again.",
+    'TARGET_BOT':             "You thought you could trick me into bombing myself?!",
+    'TARGET_SELF':            "%s pls. Bomb a friend if you have to!",
+    'TARGET_IMAGINARY':       "You can't bomb imaginary people!",
+    'TARGET_DISABLED':        "I'm not allowed to bomb %s, sorry.",
+    'TARGET_DISABLED_FYI':    "Just so you know, %s is marked as unbombable.",
+    'NOT_WHILE_DISABLED':     "Try again when you're bombable yourself, %s.",
+    'TARGET_FULL':            "I can't fit another bomb in %s's pants!",
+    'BOMB_PLANTED':           "Hey, %%s! I think there's a bomb in your pants. %s timer, %%d wires: %%s. "
+                              "Which wire would you like to cut? (respond with %%scutwire color)" % FUSE_TEXT,
+    'BOMB_ANSWER':            "Hey, don't tell %s, but it's the %s wire.",
+    'CUT_NO_BOMB':            "You can't cut a wire until someone bombs you, %s.",
+    'CUT_NO_WIRE':            "You have to choose a wire to cut.",
+    'CUT_ALL_WIRES':          "Cutting ALL the wires! (You should've picked the %s wire.)",
+    'CUT_IMAGINARY':          "That wire isn't here, %s! You sure you're picking the right one?",
+    'CUT_CORRECT':            "You did it, %s! I'll be honest, I thought you were dead. "
+                              "But nope, you did it. You picked the right one. Well done.",
+    'CUT_WRONG':              "Nope, wrong wire! Aww, now you've gone and killed yourself. "
+                              "Wow. Sorry. (You should've picked the %s wire.)",
+    'NEVER_TRIED':            "%s pls, you could've at least picked one! Now you're dead. You see that? "
+                              "Guts, all over the place. (You should've picked the %s wire.)",
+    'EXPLOSION':              formatting.color("^!^!^!BOOM!^!^!^", 'red'),
+    'TARGET_DEAD':            "%s is dead! %s",
+    'BOMB_STILL':             "There's still a bomb in your pants, %s!",
+    'NOT_BOMBED':             "Nobody bombed %s yet!",
+    'MAYBE_YOU':              " Maybe you should be the first, %s. =3",
+    'BOMBS_PLANTED':          " Bombs planted: %d",
+    'BOMB_STATS':             "%s defused %d %s, but failed %d %s and didn't even bother with %d %s.",
+    'ALLS_STATS':             " (%d of the failures %s from not giving a fuck and cutting ALL the wires!)",
+    'SUCCESS_RATE':           " Success rate: %.1f%%",
+    'RESET_WHO':              "Whose bomb stats do you want me to reset?",
+    'RESET_DONE':             "Bomb stats for %s reset.",
+    'RECENTLY_PLANTED':       "You recently planted a bomb, and must remain bombable for %.0f more seconds.",
+    'ADMINS_MARK_UNBOMBABLE': "Only bot admins can exclude other users.",
+    'MARKED_UNBOMBABLE':      "Marked %s as unbombable.",
+    'ADMINS_MARK_BOMBABLE':   "Only bot admins can unexclude other users.",
+    'MARKED_BOMBABLE':        "Marked %s as bombable again.",
+    'ADMIN_DISABLE_KICKS':    "Only a channel admin or greater can disable bomb kicks.",
+    'KICKS_DISABLED':         "Bomb kicks disabled in %s.",
+    'ADMIN_ENABLE_KICKS':     "Only a channel admin or greater can enable bomb kicks.",
+    'KICKS_ENABLED':          "Bomb kicks enabled in %s.",
+    'ADMIN_DISABLE_BOMBS':    "Only a channel admin or greater can disable bombing in this channel.",
+    'BOMBS_DISABLED':         "Bombs disabled in %s.",
+    'ADMIN_ENABLE_BOMBS':     "Only a channel admin or greater can enable bombing in this channel.",
+    'BOMBS_ENABLED':          "Bombs enabled in %s.",
+    'OWNER_MERGE':            "Only the bot owner can merge users.",
+    'MERGE_SYNTAX':           "I want to be sure there are no mistakes here. "
+                              "Please specify nicks to merge as: <duplicate> into <primary>",
+    'MERGE_DONE':             "Merged %s into %s.",
+}
+
 BOMBS = {}
 lock = RLock()
 
@@ -32,37 +86,37 @@ def start(bot, trigger):
      don't guess the right wire fast enough.
     """
     if not trigger.group(3):
-        bot.say("Who do you want to bomb?")
+        bot.say(STRINGS['TARGET_MISSING'])
         return NOLIMIT
     if bot.db.get_channel_value(trigger.sender, 'bombs_disabled'):
-        bot.notice("An admin has disabled bombing in %s." % trigger.sender, trigger.nick)
+        bot.notice(STRINGS['CHANNEL_DISABLED'] % trigger.sender, trigger.nick)
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
     if since_last < TIMEOUT and not trigger.admin:
-        bot.notice("You must wait %.0f seconds before you can bomb someone again." % (TIMEOUT - since_last),
+        bot.notice(STRINGS['TIMEOUT_REMAINING'] % (TIMEOUT - since_last),
                    trigger.nick)
         return
     global BOMBS
     target = Identifier(trigger.group(3))
     target_unbombable = bot.db.get_nick_value(target, 'unbombable')
     if target == bot.nick:
-        bot.say("You thought you could trick me into bombing myself?!")
+        bot.say(STRINGS['TARGET_BOT'])
         return NOLIMIT
     if target == trigger.nick:
-        bot.say("%s pls. Bomb a friend if you have to!" % trigger.nick)
+        bot.say(STRINGS['TARGET_SELF'] % trigger.nick)
         return NOLIMIT
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
-        bot.say("You can't bomb imaginary people!")
+        bot.say(STRINGS['TARGET_IMAGINARY'])
         return NOLIMIT
     if target_unbombable and not trigger.admin:
-        bot.say("I'm not allowed to bomb %s, sorry." % target)
+        bot.say(STRINGS['TARGET_DISABLED'] % target)
         return NOLIMIT
     if bot.db.get_nick_value(trigger.nick, 'unbombable'):
-        bot.say("Try again when you're bombable yourself, %s." % trigger.nick)
+        bot.say(STRINGS['NOT_WHILE_DISABLED'] % trigger.nick)
         return NOLIMIT
     with lock:
         if target.lower() in BOMBS:
-            bot.say("I can't fit another bomb in %s's pants!" % target)
+            bot.say(STRINGS['TARGET_FULL'] % target)
             return NOLIMIT
         wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
         num_wires = len(wires)
@@ -70,12 +124,10 @@ def start(bot, trigger):
         wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
         wires = [wire.replace('Light_', '') for wire in wires]
         color = choice(wires)
-        bot.say("Hey, %s! I think there's a bomb in your pants. %s timer, %d wires: %s. "
-                "Which wire would you like to cut? (respond with %scutwire color)"
-                % (target, FUSE_TEXT, num_wires, wires_list, bot.config.core.help_prefix or '.'))
-        bot.notice("Hey, don't tell %s, but it's the %s wire." % (target, color), trigger.nick)
+        bot.say(STRINGS['BOMB_PLANTED'] % (target, num_wires, wires_list, bot.config.core.help_prefix or '.'))
+        bot.notice(STRINGS['BOMB_ANSWER'] % (target, color), trigger.nick)
         if target_unbombable:
-            bot.notice("Just so you know, %s is marked as unbombable." % target, trigger.nick)
+            bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
         timer = Timer(FUSE, explode, (bot, trigger))
         BOMBS[target.lower()] = (wires, color, timer, target)
         timer.start()
@@ -95,34 +147,32 @@ def cutwire(bot, trigger):
     target = Identifier(trigger.nick)
     with lock:
         if target.lower() != bot.nick.lower() and target.lower() not in BOMBS:
-            bot.say("You can't cut a wire until someone bombs you, %s." % target)
+            bot.say(STRINGS['CUT_NO_BOMB'] % target)
             return
         if not trigger.group(3):
-            bot.say("You have to choose a wire to cut.")
+            bot.say(STRINGS['CUT_NO_WIRE'])
             return
         # Remove target from bomb list temporarily
         wires, color, timer, orig_target = BOMBS.pop(target.lower())
         wirecut = trigger.group(3)
         if wirecut.lower() in ('all', 'all!'):
             timer.cancel()  # defuse timer, execute premature detonation
-            bot.say("Cutting ALL the wires! (You should've picked the %s wire.)" % color)
+            bot.say(STRINGS['CUT_ALL_WIRES'] % color)
             kickboom(bot, trigger, target)
             alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
             bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
         elif wirecut.capitalize() not in wires:
-            bot.say("That wire isn't here, %s! You sure you're picking the right one?" % target)
+            bot.say(STRINGS['CUT_IMAGINARY'] % target)
             # Add the target back onto the bomb list
             BOMBS[target.lower()] = (wires, color, timer, orig_target)
         elif wirecut.capitalize() == color:
-            bot.say("You did it, %s! I'll be honest, I thought you were dead. "
-                    "But nope, you did it. You picked the right one. Well done." % target)
+            bot.say(STRINGS['CUT_CORRECT'] % target)
             timer.cancel()  # defuse bomb
             defuses = bot.db.get_nick_value(orig_target, 'bomb_defuses') or 0
             bot.db.set_nick_value(orig_target, 'bomb_defuses', defuses + 1)
         else:
             timer.cancel()  # defuse timer, execute premature detonation
-            bot.say("Nope, wrong wire! Aww, now you've gone and killed yourself. "
-                    "Wow. Sorry. (You should've picked the %s wire.)" % color)
+            bot.say(STRINGS['CUT_WRONG'] % color)
             kickboom(bot, trigger, target)
             wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
             bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
@@ -137,9 +187,7 @@ def explode(bot, trigger):
                 if BOMBS[nick][3] == target:
                     target = Identifier(nick)
                     break
-        bot.say("%s pls, you could've at least picked one! Now you're dead. You see that? "
-                "Guts, all over the place. (You should've picked the %s wire.)" %
-                (target, BOMBS[target.lower()][1]))
+        bot.say(STRINGS['NEVER_TRIED'] % (target, BOMBS[target.lower()][1]))
         kickboom(bot, trigger, target)
         BOMBS.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
@@ -149,10 +197,10 @@ def explode(bot, trigger):
 # helper functions
 def kickboom(bot, trigger, target):
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks') and not bot.db.get_nick_value(target, 'unbombable'):
-        kmsg = "KICK %s %s :%s" % (trigger.sender, target, EXPLOSION_TEXT)
+        kmsg = "KICK %s %s :%s" % (trigger.sender, target, STRINGS['EXPLOSION'])
         bot.write([kmsg])
     else:
-        bot.say("%s is dead! %s" % (target, EXPLOSION_TEXT))
+        bot.say(STRINGS['TARGET_DEAD'] % (target, STRINGS['EXPLOSION']))
 
 
 def time_since_bomb(bot, nick):
@@ -170,7 +218,7 @@ def bomb_glue(bot, trigger):
     with lock:
         if old.lower() in BOMBS:
             BOMBS[new.lower()] = BOMBS.pop(old.lower())
-            bot.notice("There's still a bomb in your pants, %s!" % new, new)
+            bot.notice(STRINGS['BOMB_STILL'] % new, new)
 
 
 @commands('bombstats', 'bombs')
@@ -192,11 +240,11 @@ def bombstats(bot, trigger):
     planted = bot.db.get_nick_value(target, 'bombs_planted') or 0
     # short-circuit if user has no stats
     if total == 0:
-        msg = "Nobody bombed %s yet!" % target
+        msg = STRINGS['NOT_BOMBED'] % target
         if target != trigger.nick:
-            msg += " Maybe you should be the first, %s. =3" % trigger.nick
+            msg += STRINGS['MAYBE_YOU'] % trigger.nick
         if planted:
-            msg += " Bombs planted: %d" % planted
+            msg += STRINGS['BOMBS_PLANTED'] % planted
         bot.say(msg)
         return
     success_rate = defuses / total * 100
@@ -206,13 +254,12 @@ def bombstats(bot, trigger):
     g_timeouts = "attempt" if timeouts == 1 else "attempts"
     g_defuses = "bomb" if defuses == 1 else "bombs"
     g_alls = "was" if alls == 1 else "were"
-    msg = "%s defused %d %s, but failed %d %s and didn't even bother with %d %s." \
-          % (target, defuses, g_defuses, wrongs, g_wrongs, timeouts, g_timeouts)
+    msg = STRINGS['BOMB_STATS'] % (target, defuses, g_defuses, wrongs, g_wrongs, timeouts, g_timeouts)
     if alls:
-        msg += " (%d of the failures %s from not giving a fuck and cutting ALL the wires!)" % (alls, g_alls)
-    msg += " Success rate: %.1f%%" % success_rate
+        msg += STRINGS['ALLS_STATS'] % (alls, g_alls)
+    msg += STRINGS['SUCCESS_RATE'] % success_rate
     if planted:
-        msg += " Bombs planted: %d" % planted
+        msg += STRINGS['BOMBS_PLANTED'] % planted
     bot.say(msg)
 
 
@@ -224,13 +271,13 @@ def statreset(bot, trigger):
     Reset a given user's bomb stats (e.g. after abuse)
     """
     if not trigger.group(3):
-        bot.say("Whose bomb stats do you want me to reset?")
+        bot.say(STRINGS['RESET_WHO'])
         return
     target = Identifier(trigger.group(3))
     keys = ['bomb_wrongs', 'bomb_defuses', 'bomb_timeouts', 'bomb_alls', 'bombs_planted']
     for key in keys:
         bot.db.set_nick_value(target, key, 0)
-    bot.say("Bomb stats for %s reset." % target)
+    bot.say(STRINGS['RESET_DONE'] % target)
 
 
 @commands('bomboff')
@@ -243,17 +290,15 @@ def exclude(bot, trigger):
         target = trigger.nick
         time_since = time_since_bomb(bot, target)
         if time_since < TIMEOUT:
-            bot.notice(
-                "You recently planted a bomb, and must remain bombable for %.0f more seconds." % (TIMEOUT - time_since),
-                target)
+            bot.notice(STRINGS['RECENTLY_PLANTED'] % (TIMEOUT - time_since), target)
             return
     else:
         target = Identifier(trigger.group(3))
     if not trigger.admin and target != trigger.nick:
-        bot.say("Only bot admins can exclude other users.")
+        bot.say(STRINGS['ADMINS_MARK_UNBOMBABLE'])
         return
     bot.db.set_nick_value(target, 'unbombable', True)
-    bot.say("Marked %s as unbombable." % target)
+    bot.say(STRINGS['MARKED_UNBOMBABLE'] % target)
 
 
 @commands('bombon')
@@ -267,63 +312,63 @@ def unexclude(bot, trigger):
     else:
         target = Identifier(trigger.group(3))
     if not trigger.admin and target != trigger.nick:
-        bot.say("Only bot admins can unexclude other users.")
+        bot.say(STRINGS['ADMINS_MARK_BOMBABLE'])
         return
     bot.db.set_nick_value(target, 'unbombable', False)
-    bot.say("Marked %s as bombable again." % target)
+    bot.say(STRINGS['MARKED_BOMBABLE'] % target)
 
 
 @commands('bombkickoff')
 @example(".bombkickoff")
-@require_privilege(ADMIN, "Only a channel admin or greater can disable bomb kicks.")
+@require_privilege(ADMIN, STRINGS['ADMIN_DISABLE_KICKS'])
 @require_chanmsg
 def nokick(bot, trigger):
     """
     Allows channel admins and up to disable kicking for bombs in the channel.
     """
     bot.db.set_channel_value(trigger.sender, 'bomb_kicks', False)
-    bot.say("Bomb kicks disabled in %s." % trigger.sender)
+    bot.say(STRINGS['KICKS_DISABLED'] % trigger.sender)
 
 
 @commands('bombkickon')
 @example(".bombkickon")
-@require_privilege(ADMIN, "Only a channel admin or greater can enable bomb kicks.")
+@require_privilege(ADMIN, STRINGS['ADMIN_ENABLE_KICKS'])
 @require_chanmsg
 def yeskick(bot, trigger):
     """
     Allows channel admins and up to (re-)enable kicking for bombs in the channel.
     """
     bot.db.set_channel_value(trigger.sender, 'bomb_kicks', True)
-    bot.say("Bomb kicks enabled in %s." % trigger.sender)
+    bot.say(STRINGS['KICKS_ENABLED'] % trigger.sender)
 
 
 @commands('bombsoff')
 @example(".bombsoff")
-@require_privilege(ADMIN, "Only a channel admin or greater can disable bombing in this channel.")
+@require_privilege(ADMIN, "")
 @require_chanmsg
 def bombnazi(bot, trigger):
     """
     Allows channel admins and up to disable bombing entirely in the current channel.
     """
     bot.db.set_channel_value(trigger.sender, 'bombs_disabled', True)
-    bot.say("Bombs disabled in %s." % trigger.sender)
+    bot.say(STRINGS['BOMBS_DISABLED'] % trigger.sender)
 
 
 @commands('bombson')
 @example(".bombson")
-@require_privilege(ADMIN, "Only a channel admin or greater can enable bombing in this channel.")
+@require_privilege(ADMIN, STRINGS['ADMIN_ENABLE_BOMBS'])
 @require_chanmsg
 def bomboprah(bot, trigger):
     """
     Allows channel admins and up to (re-)enable bombing in the current channel.
     """
     bot.db.set_channel_value(trigger.sender, 'bombs_disabled', False)
-    bot.say("Bombs enabled in %s." % trigger.sender)
+    bot.say(STRINGS['BOMBS_ENABLED'] % trigger.sender)
 
 
 @commands('bombnickmerge')
 @example(".bombnickmerge newbie into old_friend")
-@require_owner("Only the bot owner can merge users.")
+@require_owner(STRINGS['OWNER_MERGE'])
 def is_really(bot, trigger):
     """
     Merge the two nicks, keeping the stats for the second one.
@@ -331,8 +376,7 @@ def is_really(bot, trigger):
     duplicate = trigger.group(3) or None
     primary = trigger.group(5) or None
     if not primary or not duplicate or trigger.group(4).lower() != 'into':
-        bot.reply("I want to be sure there are no mistakes here. "
-                  "Please specify nicks to merge as: <duplicate> into <primary>")
+        bot.reply(STRINGS['MERGE_SYNTAX'])
         return
     duplicate = Identifier(duplicate)
     primary = Identifier(primary)
@@ -345,4 +389,4 @@ def is_really(bot, trigger):
         bot.db.set_nick_value(primary, stat, newstats[stat])
         bot.db.set_nick_value(duplicate, stat, 0)  # because willie < 5.4.1 doesn't merge properly
     bot.db.merge_nick_groups(primary, duplicate)
-    bot.say("Merged %s into %s." % (duplicate, primary))
+    bot.say(STRINGS['MERGE_DONE'] % (duplicate, primary))
