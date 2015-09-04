@@ -5,7 +5,7 @@ Licensed under the Eiffel Forum License 2.
 
 http://willie.dfbta.net
 """
-from __future__ import division
+from __future__ import division, unicode_literals
 from willie.module import *
 from willie.tools import Identifier
 from willie import formatting
@@ -17,9 +17,9 @@ import time
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 FUSE = 120  # seconds
 TIMEOUT = 600
-FUSE_TEXT = "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE)
 
 STRINGS = {
+    'FUSE':                   "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE),
     'TARGET_MISSING':         "Who do you want to bomb?",
     'CHANNEL_DISABLED':       "An admin has disabled bombing in %s.",
     'TIMEOUT_REMAINING':      "You must wait %.0f seconds before you can bomb someone again.",
@@ -30,8 +30,15 @@ STRINGS = {
     'TARGET_DISABLED_FYI':    "Just so you know, %s is marked as unbombable.",
     'NOT_WHILE_DISABLED':     "Try again when you're bombable yourself, %s.",
     'TARGET_FULL':            "I can't fit another bomb in %s's pants!",
-    'BOMB_PLANTED':           "Hey, %%s! I think there's a bomb in your pants. %s timer, %%d wires: %%s. "
-                              "Which wire would you like to cut? (respond with %%scutwire color)" % FUSE_TEXT,
+    'BOMB_PLANTED':           ["Hey, %(target)s! I think there's a bomb in your pants. %(fuse_time)s timer, "
+                               "%(wire_num)d wires: %(wire_list)s. Which wire would you like to cut? "
+                               "(respond with %(prefix)scutwire color)",
+                               "%(target)s, I just saw someone put a bomb down your pants! There are %(wire_num)d "
+                               "wires (%(wire_list)s), and I think it's a %(fuse_time)s fuse. Quick, tell me what "
+                               "wire to cut! (respond with %(prefix)scutwire color)",
+                               "\u306d, %(target)s, there's a stowaway in your pants. It's a bomb on a %(fuse_time)s "
+                               "timer. Given where it is, you should probably let me cut one of the %(wire_num)d wires "
+                               "for you. The colors are %(wire_list)s. (respond with %(prefix)scutwire color)"],
     'BOMB_ANSWER':            "Hey, don't tell %s, but it's the %s wire.",
     'CUT_NO_BOMB':            "You can't cut a wire until someone bombs you, %s.",
     'CUT_NO_WIRE':            "You have to choose a wire to cut.",
@@ -124,7 +131,10 @@ def start(bot, trigger):
         wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
         wires = [wire.replace('Light_', '') for wire in wires]
         color = choice(wires)
-        bot.say(STRINGS['BOMB_PLANTED'] % (target, num_wires, wires_list, bot.config.core.help_prefix or '.'))
+        bot.say(
+            choice(STRINGS['BOMB_PLANTED']) % {'target':    target, 'fuse_time': STRINGS['FUSE'], 'wire_num': num_wires,
+                                               'wire_list': wires_list, 'prefix': bot.config.core.help_prefix or '.'
+                                               })
         bot.notice(STRINGS['BOMB_ANSWER'] % (target, color), trigger.nick)
         if target_unbombable:
             bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
