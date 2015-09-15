@@ -89,8 +89,8 @@ lock = RLock()
 @require_chanmsg
 def start(bot, trigger):
     """
-    Put a bomb in the specified user's pants. They will be kicked if they
-     don't guess the right wire fast enough.
+    Put a bomb in the specified user's pants. If they take too long or guess wrong,
+     they die (and get kicked from the channel, if enabled).
     """
     if not trigger.group(3):
         bot.say(STRINGS['TARGET_MISSING'])
