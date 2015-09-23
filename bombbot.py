@@ -139,7 +139,11 @@ def start(bot, trigger):
         if target_unbombable:
             bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
         timer = Timer(FUSE, explode, (bot, trigger))
-        BOMBS[target.lower()] = (wires, color, timer, target)
+        BOMBS[target.lower()] = {'wires':  wires,
+                                 'color':  color,
+                                 'timer':  timer,
+                                 'target': target
+                                 }
         timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
@@ -163,29 +167,29 @@ def cutwire(bot, trigger):
             bot.say(STRINGS['CUT_NO_WIRE'])
             return
         # Remove target from bomb list temporarily
-        wires, color, timer, orig_target = BOMBS.pop(target.lower())
+        bomb = BOMBS.pop(target.lower())
         wirecut = trigger.group(3)
         if wirecut.lower() in ('all', 'all!'):
-            timer.cancel()  # defuse timer, execute premature detonation
-            bot.say(STRINGS['CUT_ALL_WIRES'] % color)
+            bomb['timer'].cancel()  # defuse timer, execute premature detonation
+            bot.say(STRINGS['CUT_ALL_WIRES'] % bomb['color'])
             kickboom(bot, trigger, target)
-            alls = bot.db.get_nick_value(orig_target, 'bomb_alls') or 0
-            bot.db.set_nick_value(orig_target, 'bomb_alls', alls + 1)
-        elif wirecut.capitalize() not in wires:
+            alls = bot.db.get_nick_value(bomb['target'], 'bomb_alls') or 0
+            bot.db.set_nick_value(bomb['target'], 'bomb_alls', alls + 1)
+        elif wirecut.capitalize() not in bomb['wires']:
             bot.say(STRINGS['CUT_IMAGINARY'] % target)
             # Add the target back onto the bomb list
-            BOMBS[target.lower()] = (wires, color, timer, orig_target)
-        elif wirecut.capitalize() == color:
+            BOMBS[target.lower()] = bomb
+        elif wirecut.capitalize() == bomb['color']:
             bot.say(STRINGS['CUT_CORRECT'] % target)
-            timer.cancel()  # defuse bomb
-            defuses = bot.db.get_nick_value(orig_target, 'bomb_defuses') or 0
-            bot.db.set_nick_value(orig_target, 'bomb_defuses', defuses + 1)
+            bomb['timer'].cancel()  # defuse bomb
+            defuses = bot.db.get_nick_value(bomb['target'], 'bomb_defuses') or 0
+            bot.db.set_nick_value(bomb['target'], 'bomb_defuses', defuses + 1)
         else:
-            timer.cancel()  # defuse timer, execute premature detonation
-            bot.say(STRINGS['CUT_WRONG'] % color)
+            bomb['timer'].cancel()  # defuse timer, execute premature detonation
+            bot.say(STRINGS['CUT_WRONG'] % bomb['color'])
             kickboom(bot, trigger, target)
-            wrongs = bot.db.get_nick_value(orig_target, 'bomb_wrongs') or 0
-            bot.db.set_nick_value(orig_target, 'bomb_wrongs', wrongs + 1)
+            wrongs = bot.db.get_nick_value(bomb['target'], 'bomb_wrongs') or 0
+            bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
 
 
 def explode(bot, trigger):
@@ -194,7 +198,7 @@ def explode(bot, trigger):
     with lock:
         if target.lower() not in BOMBS:  # nick change happened
             for nick in BOMBS.keys():
-                if BOMBS[nick][3] == target:
+                if BOMBS[nick]['target'] == target:
                     target = Identifier(nick)
                     break
         bot.say(STRINGS['NEVER_TRIED'] % (target, BOMBS[target.lower()][1]))
