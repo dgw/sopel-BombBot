@@ -142,7 +142,8 @@ def start(bot, trigger):
         BOMBS[target.lower()] = {'wires':  wires,
                                  'color':  color,
                                  'timer':  timer,
-                                 'target': target
+                                 'target': target,
+                                 'bomber': trigger.nick
                                  }
         timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
@@ -190,6 +191,31 @@ def cutwire(bot, trigger):
             kickboom(bot, trigger, target)
             wrongs = bot.db.get_nick_value(bomb['target'], 'bomb_wrongs') or 0
             bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
+
+
+@commands('bombcancel', 'cancelbomb')
+@example('.bombcancel unfortunateuser')
+@require_chanmsg
+def cancel_bomb(bot, trigger):
+    """
+    Cancel the bomb placed on the specified player (can also be used by admins).
+    """
+    target = trigger.group(3) or None
+    if not target:
+        bot.reply("Please specify whose bomb to cancel.")
+        return
+    with lock:
+        if target.lower() not in BOMBS:
+            bot.reply("There is no bomb on %s." % target)
+            return
+        if trigger.nick != BOMBS[target.lower()]['bomber'] and not trigger.admin:
+            bot.reply("You don't have permission to cancel %s's bomb!" % target)
+            return
+        bomber = BOMBS[target.lower()]['bomber']
+        bombs_planted = bot.db.get_nick_value(bomber, 'bombs_planted') or 0
+        bot.db.set_nick_value(bomber, 'bombs_planted', bombs_planted - 1)
+        BOMBS.pop(target.lower())['timer'].cancel()
+        bot.say("Cancelled %s's bomb." % target)
 
 
 def explode(bot, trigger):
