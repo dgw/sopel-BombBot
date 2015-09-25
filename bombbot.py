@@ -227,7 +227,7 @@ def explode(bot, trigger):
                 if BOMBS[nick]['target'] == target:
                     target = Identifier(nick)
                     break
-        bot.say(STRINGS['NEVER_TRIED'] % (target, BOMBS[target.lower()][1]))
+        bot.say(STRINGS['NEVER_TRIED'] % (target, BOMBS[target.lower()]['color']))
         kickboom(bot, trigger, target)
         BOMBS.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
