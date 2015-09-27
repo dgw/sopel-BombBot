@@ -52,6 +52,10 @@ STRINGS = {
                               "Guts, all over the place. (You should've picked the %s wire.)",
     'EXPLOSION':              formatting.color("^!^!^!BOOM!^!^!^", 'red'),
     'TARGET_DEAD':            "%s is dead! %s",
+    'CANCEL_WHOM':            "Please specify whose bomb to cancel.",
+    'CANCEL_NO_BOMB':         "There is no bomb on %s.",
+    'CANCEL_NO_PERMISSION':   "You don't have permission to cancel %s's bomb!",
+    'CANCEL_DONE':            "Cancelled %s's bomb.",
     'BOMB_STILL':             "There's still a bomb in your pants, %s!",
     'NOT_BOMBED':             "Nobody bombed %s yet!",
     'MAYBE_YOU':              " Maybe you should be the first, %s. =3",
@@ -202,20 +206,20 @@ def cancel_bomb(bot, trigger):
     """
     target = trigger.group(3) or None
     if not target:
-        bot.reply("Please specify whose bomb to cancel.")
+        bot.reply(STRINGS['CANCEL_WHOM'])
         return
     with lock:
         if target.lower() not in BOMBS:
-            bot.reply("There is no bomb on %s." % target)
+            bot.reply(STRINGS['CANCEL_NO_BOMB'] % target)
             return
         if trigger.nick != BOMBS[target.lower()]['bomber'] and not trigger.admin:
-            bot.reply("You don't have permission to cancel %s's bomb!" % target)
+            bot.reply(STRINGS['CANCEL_NO_PERMISSION'] % target)
             return
         bomber = BOMBS[target.lower()]['bomber']
         bombs_planted = bot.db.get_nick_value(bomber, 'bombs_planted') or 0
         bot.db.set_nick_value(bomber, 'bombs_planted', bombs_planted - 1)
         BOMBS.pop(target.lower())['timer'].cancel()
-        bot.say("Cancelled %s's bomb." % target)
+        bot.say(STRINGS['CANCEL_DONE'] % target)
 
 
 def explode(bot, trigger):
