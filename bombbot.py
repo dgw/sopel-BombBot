@@ -222,6 +222,7 @@ def cancel_bomb(bot, trigger):
         bot.say(STRINGS['CANCEL_DONE'] % target)
 
 
+# helper functions
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     orig_target = target
@@ -238,7 +239,6 @@ def explode(bot, trigger):
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
 
-# helper functions
 def kickboom(bot, trigger, target):
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks') and not bot.db.get_nick_value(target, 'unbombable'):
         kmsg = "KICK %s %s :%s" % (trigger.sender, target, STRINGS['EXPLOSION'])
