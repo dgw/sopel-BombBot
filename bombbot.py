@@ -109,7 +109,7 @@ def start(bot, trigger):
     if target == bot.nick:
         bot.say(STRINGS['TARGET_BOT'])
         return NOLIMIT
-    if target == trigger.nick:
+    if target == trigger.nick or bot.db.get_nick_id(trigger.nick, False) == bot.db.get_nick_id(target, False):
         bot.say(STRINGS['TARGET_SELF'] % trigger.nick)
         return NOLIMIT
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
