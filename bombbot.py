@@ -109,7 +109,7 @@ def start(bot, trigger):
     if target == bot.nick:
         bot.say(STRINGS['TARGET_BOT'])
         return NOLIMIT
-    if target == trigger.nick or bot.db.get_nick_id(trigger.nick, False) == bot.db.get_nick_id(target, False):
+    if is_self(bot, trigger.nick, target):
         bot.say(STRINGS['TARGET_SELF'] % trigger.nick)
         return NOLIMIT
     if target.lower() not in bot.privileges[trigger.sender.lower()]:
@@ -247,6 +247,19 @@ def time_since_bomb(bot, nick):
     now = time.time()
     last = bot.db.get_nick_value(nick, 'bomb_last_planted') or 0
     return abs(last - now)
+
+
+def is_self(bot, nick, target):
+    nick = Identifier(nick)
+    target = Identifier(target)
+    if nick == target:
+        return True  # shortcut to catch common goofballs
+    try:
+        nick_id = bot.db.get_nick_id(nick, False)
+        target_id = bot.db.get_nick_id(target, False)
+    except ValueError:
+        return False  # if either nick doesn't have an ID, they can't be in a group
+    return nick_id == target_id
 
 
 # Track nick changes
