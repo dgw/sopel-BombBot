@@ -132,9 +132,12 @@ def start(bot, trigger):
         wires = [wire.replace('Light_', '') for wire in wires]
         color = choice(wires)
         bot.say(
-            choice(STRINGS['BOMB_PLANTED']) % {'target':    target, 'fuse_time': STRINGS['FUSE'], 'wire_num': num_wires,
-                                               'wire_list': wires_list, 'prefix': bot.config.core.help_prefix or '.'
-                                               })
+                choice(STRINGS['BOMB_PLANTED']) % {'target':           target,
+                                                   'fuse_time': STRINGS['FUSE'],
+                                                   'wire_num':         num_wires,
+                                                   'wire_list':        wires_list,
+                                                   'prefix':           bot.config.core.help_prefix or '.'
+                                                   })
         bot.notice(STRINGS['BOMB_ANSWER'] % (target, color), trigger.nick)
         if target_unbombable:
             bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
@@ -417,4 +420,3 @@ def bomboprah(bot, trigger):
     """
     bot.db.set_channel_value(trigger.sender, 'bombs_disabled', False)
     bot.say(STRINGS['BOMBS_ENABLED'] % trigger.sender)
-
