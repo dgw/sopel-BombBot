@@ -11,7 +11,12 @@ from willie.tools import Identifier
 from willie import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
+import sys
 import time
+
+# 2 to 3 stuff; should be replaced by six probably
+if sys.version_info.major > 2:
+    xrange = range
 
 # code below relies on colors being at least 3 elements long
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
