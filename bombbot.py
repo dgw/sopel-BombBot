@@ -75,9 +75,9 @@ STRINGS = {
     'MARKED_UNBOMBABLE':      "Marked %s as unbombable.",
     'ADMINS_MARK_BOMBABLE':   "Only bot admins can unexclude other users.",
     'MARKED_BOMBABLE':        "Marked %s as bombable again.",
-    'ADMIN_DISABLE_KICKS':    "Only a channel admin or greater can disable bomb kicks.",
+    'OP_DISABLE_KICKS':       "Only a channel operator or greater can disable bomb kicks.",
     'KICKS_DISABLED':         "Bomb kicks disabled in %s.",
-    'ADMIN_ENABLE_KICKS':     "Only a channel admin or greater can enable bomb kicks.",
+    'OP_ENABLE_KICKS':        "Only a channel operator or greater can enable bomb kicks.",
     'KICKS_ENABLED':          "Bomb kicks enabled in %s.",
     'ADMIN_DISABLE_BOMBS':    "Only a channel admin or greater can disable bombing in this channel.",
     'BOMBS_DISABLED':         "Bombs disabled in %s.",
@@ -381,7 +381,7 @@ def unexclude(bot, trigger):
 
 @commands('bombkickoff')
 @example(".bombkickoff")
-@require_privilege(ADMIN, STRINGS['ADMIN_DISABLE_KICKS'])
+@require_privilege(OP, STRINGS['OP_DISABLE_KICKS'])
 @require_chanmsg
 def nokick(bot, trigger):
     """
@@ -393,7 +393,7 @@ def nokick(bot, trigger):
 
 @commands('bombkickon')
 @example(".bombkickon")
-@require_privilege(ADMIN, STRINGS['ADMIN_ENABLE_KICKS'])
+@require_privilege(OP, STRINGS['OP_ENABLE_KICKS'])
 @require_chanmsg
 def yeskick(bot, trigger):
     """
