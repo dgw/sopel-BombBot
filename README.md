@@ -1,5 +1,5 @@
-# willie-BombBot
-Customized version of a custom version of a bomb module for willie
+# sopel-BombBot
+Customized version of a custom version of a bomb module for sopel
 
 ## Dependencies
 * `__future__`: `division` and `unicode_literals`

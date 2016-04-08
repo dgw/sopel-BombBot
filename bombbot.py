@@ -1,14 +1,14 @@
 """
-bomb.py - Simple Willie bomb prank game
+bomb.py - Simple Sopel bomb prank game
 Copyright 2012, Edward Powell http://embolalia.net
 Licensed under the Eiffel Forum License 2.
 
-http://willie.dfbta.net
+http://sopel.chat
 """
 from __future__ import division, unicode_literals
-from willie.module import *
-from willie.tools import Identifier
-from willie import formatting
+from sopel.module import *
+from sopel.tools import Identifier
+from sopel import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
 import sys
@@ -164,7 +164,7 @@ def start(bot, trigger):
 @require_chanmsg
 def cutwire(bot, trigger):
     """
-    Tells willie to cut a wire when you've been bombed.
+    Tells sopel to cut a wire when you've been bombed.
     """
     global BOMBS
     target = Identifier(trigger.nick)
