@@ -168,6 +168,8 @@ def cutwire(bot, trigger):
     """
     global BOMBS
     target = Identifier(trigger.nick)
+    if target == bot.nick:  # a parallel bot behind a bouncer (e.g. Bucket) can trigger this function (see #16)
+        return
     with lock:
         if target.lower() != bot.nick.lower() and target.lower() not in BOMBS:
             bot.say(STRINGS['CUT_NO_BOMB'] % target)
