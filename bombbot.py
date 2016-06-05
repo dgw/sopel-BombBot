@@ -214,6 +214,7 @@ def cancel_bomb(bot, trigger):
     if not target:
         bot.reply(STRINGS['CANCEL_WHOM'])
         return
+    target = Identifier(target)  # issue #24
     with lock:
         if target.lower() not in BOMBS:
             bot.reply(STRINGS['CANCEL_NO_BOMB'] % target)
