@@ -352,15 +352,16 @@ def exclude(bot, trigger):
     """
     if not trigger.group(3):
         target = trigger.nick
-        time_since = time_since_bomb(bot, target)
-        if time_since < TIMEOUT:
-            bot.notice(STRINGS['RECENTLY_PLANTED'] % (TIMEOUT - time_since), target)
-            return
     else:
         target = Identifier(trigger.group(3))
-    if not trigger.admin and target != trigger.nick:
-        bot.say(STRINGS['ADMINS_MARK_UNBOMBABLE'])
+        if not trigger.admin and target != trigger.nick:
+            bot.say(STRINGS['ADMINS_MARK_UNBOMBABLE'])
+            return
+    time_since = time_since_bomb(bot, target)
+    if time_since < TIMEOUT and target == trigger.nick:
+        bot.notice(STRINGS['RECENTLY_PLANTED'] % (TIMEOUT - time_since), target)
         return
+    # Getting this far means all checks passed
     bot.db.set_nick_value(target, 'unbombable', True)
     bot.say(STRINGS['MARKED_UNBOMBABLE'] % target)
 
