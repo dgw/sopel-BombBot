@@ -213,8 +213,8 @@ def cancel_bomb(bot, trigger):
     target = trigger.group(3) or None
     if not target:
         for bomb in BOMBS:
-            if trigger.nick == bomb['bomber']:
-                target = bomb['target']
+            if trigger.nick == BOMBS[bomb]['bomber']:
+                target = BOMBS[bomb]['target']
                 break
         if not target:
             return bot.reply(STRINGS['CANCEL_WHOM'])
