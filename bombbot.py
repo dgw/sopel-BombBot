@@ -259,8 +259,11 @@ def kickboom(bot, trigger, target):
 
 
 def kicking_available(bot, channel, nick):
+    bot_priv = bot.privileges[channel.lower()][bot.nick]
+    nick_priv = bot.privileges[channel.lower()][nick]
     return (
-        bot.db.get_channel_value(channel, 'bomb_kicks')
+        bot_priv >= OP and bot_priv >= nick_priv
+        and bot.db.get_channel_value(channel, 'bomb_kicks')
         and not bot.db.get_nick_value(nick, 'unbombable')
     )
 
