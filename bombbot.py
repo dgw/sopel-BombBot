@@ -83,6 +83,7 @@ STRINGS = {
     'BOMBS_DISABLED':         "Bombs disabled in %s.",
     'ADMIN_ENABLE_BOMBS':     "Only a channel admin or greater can enable bombing in this channel.",
     'BOMBS_ENABLED':          "Bombs enabled in %s.",
+    'NOT_KICKING':            "Not kicking because %s is marked as unbombable.",
 }
 
 BOMBS = {}
@@ -183,7 +184,7 @@ def cutwire(bot, trigger):
         if wirecut.lower() in ('all', 'all!'):
             bomb['timer'].cancel()  # defuse timer, execute premature detonation
             bot.say(STRINGS['CUT_ALL_WIRES'] % bomb['color'])
-            kickboom(bot, trigger, target)
+            kickboom(bot, trigger, target, bomb['bomber'])
             alls = bot.db.get_nick_value(bomb['target'], 'bomb_alls') or 0
             bot.db.set_nick_value(bomb['target'], 'bomb_alls', alls + 1)
         elif wirecut.capitalize() not in bomb['wires']:
@@ -198,7 +199,7 @@ def cutwire(bot, trigger):
         else:
             bomb['timer'].cancel()  # defuse timer, execute premature detonation
             bot.say(STRINGS['CUT_WRONG'] % bomb['color'])
-            kickboom(bot, trigger, target)
+            kickboom(bot, trigger, target, bomb['bomber'])
             wrongs = bot.db.get_nick_value(bomb['target'], 'bomb_wrongs') or 0
             bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
 
@@ -244,18 +245,20 @@ def explode(bot, trigger):
                     target = Identifier(nick)
                     break
         bot.say(STRINGS['NEVER_TRIED'] % (target, BOMBS[target.lower()]['color']))
-        kickboom(bot, trigger, target)
+        kickboom(bot, trigger, target, BOMBS[target.lower()]['bomber'])
         BOMBS.pop(target.lower())
     timeouts = bot.db.get_nick_value(orig_target, 'bomb_timeouts') or 0
     bot.db.set_nick_value(orig_target, 'bomb_timeouts', timeouts + 1)
 
 
-def kickboom(bot, trigger, target):
+def kickboom(bot, trigger, target, bomber):
     if bot.db.get_channel_value(trigger.sender, 'bomb_kicks') and not bot.db.get_nick_value(target, 'unbombable'):
         kmsg = "KICK %s %s :%s" % (trigger.sender, target, STRINGS['EXPLOSION'])
         bot.write([kmsg])
     else:
         bot.say(STRINGS['TARGET_DEAD'] % (target, STRINGS['EXPLOSION']))
+        if bot.db.get_nick_value(target, 'unbombable') and bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
+            bot.notice(STRINGS['NOT_KICKING'] % target, bomber)
 
 
 def time_since_bomb(bot, nick):
