@@ -252,13 +252,23 @@ def explode(bot, trigger):
 
 
 def kickboom(bot, trigger, target, bomber):
-    if bot.db.get_channel_value(trigger.sender, 'bomb_kicks') and not bot.db.get_nick_value(target, 'unbombable'):
+    if kicking_available(bot, trigger.sender, target):
         kmsg = "KICK %s %s :%s" % (trigger.sender, target, STRINGS['EXPLOSION'])
         bot.write([kmsg])
     else:
         bot.say(STRINGS['TARGET_DEAD'] % (target, STRINGS['EXPLOSION']))
         if bot.db.get_nick_value(target, 'unbombable') and bot.db.get_channel_value(trigger.sender, 'bomb_kicks'):
             bot.notice(STRINGS['NOT_KICKING'] % target, bomber)
+
+
+def kicking_available(bot, channel, nick):
+    bot_priv = bot.privileges[channel.lower()][bot.nick]
+    nick_priv = bot.privileges[channel.lower()][nick]
+    return (
+        bot_priv >= OP and bot_priv >= nick_priv
+        and bot.db.get_channel_value(channel, 'bomb_kicks')
+        and not bot.db.get_nick_value(nick, 'unbombable')
+    )
 
 
 def time_since_bomb(bot, nick):
