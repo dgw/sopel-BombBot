@@ -31,7 +31,7 @@ STRINGS = {
     'TARGET_BOT':             "You thought you could trick me into bombing myself?!",
     'TARGET_SELF':            "%s pls. Bomb a friend if you have to!",
     'TARGET_IMAGINARY':       "You can't bomb imaginary people!",
-    'TARGET_DISABLED':        "I'm not allowed to bomb this person, sorry.",
+    'TARGET_DISABLED':        "I'm not allowed to bomb that person, sorry.",
     'TARGET_DISABLED_FYI':    "Just so you know, %s is marked as unbombable.",
     'NOT_WHILE_DISABLED':     "Try again when you're bombable yourself, %s.",
     'TARGET_FULL':            "I can't fit another bomb in %s's pants!",
@@ -122,7 +122,7 @@ def start(bot, trigger):
         bot.say(STRINGS['TARGET_IMAGINARY'])
         return NOLIMIT
     if target_unbombable and not trigger.admin:
-        bot.say(STRINGS['TARGET_DISABLED'] % target)
+        bot.say(STRINGS['TARGET_DISABLED'])
         return NOLIMIT
     if bot.db.get_nick_value(trigger.nick, 'unbombable'):
         bot.say(STRINGS['NOT_WHILE_DISABLED'] % trigger.nick)
