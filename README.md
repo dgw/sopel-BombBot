@@ -19,6 +19,6 @@ Customized version of a custom version of a bomb module for sopel
 * User Controls:
   * `.bombon`/`.bomboff`: Lets users enable/disable being bombed at will. Admins can specify a nick.
 * Channel Controls
-  * `.bombson`/`.bombsoff`: Lets channel admins enable/disable bombing in the current channel.
-  * `.bombkickon`/`.bombkickoff`: Lets channel admins enable/disable kicking for bombs in the current channel.
+  * `.bombing [on|off]`: Lets channel admins enable/disable bombing in the current channel.
+  * `.bombkicks [on|off]`: Lets channel admins enable/disable kicking for bombs in the current channel.
 
