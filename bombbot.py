@@ -75,14 +75,7 @@ STRINGS = {
     'MARKED_UNBOMBABLE':      "Marked %s as unbombable.",
     'ADMINS_MARK_BOMBABLE':   "Only bot admins can unexclude other users.",
     'MARKED_BOMBABLE':        "Marked %s as bombable again.",
-    'OP_DISABLE_KICKS':       "Only a channel operator or greater can disable bomb kicks.",
-    'KICKS_DISABLED':         "Bomb kicks disabled in %s.",
-    'OP_ENABLE_KICKS':        "Only a channel operator or greater can enable bomb kicks.",
-    'KICKS_ENABLED':          "Bomb kicks enabled in %s.",
-    'ADMIN_DISABLE_BOMBS':    "Only a channel admin or greater can disable bombing in this channel.",
-    'BOMBS_DISABLED':         "Bombs disabled in %s.",
-    'ADMIN_ENABLE_BOMBS':     "Only a channel admin or greater can enable bombing in this channel.",
-    'BOMBS_ENABLED':          "Bombs enabled in %s.",
+    'OP_REQUIRED_TO_CHANGE':  "Only a channel operator or greater can change that setting.",
     'NOT_KICKING':            "Not kicking because %s is marked as unbombable.",
 }
 
@@ -101,7 +94,7 @@ def start(bot, trigger):
     if not trigger.group(3):
         bot.say(STRINGS['TARGET_MISSING'])
         return NOLIMIT
-    if bot.db.get_channel_value(trigger.sender, 'bombs_disabled'):
+    if not bombing_allowed(bot, trigger.sender):
         bot.notice(STRINGS['CHANNEL_DISABLED'] % trigger.sender, trigger.nick)
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
@@ -235,6 +228,20 @@ def cancel_bomb(bot, trigger):
 
 
 # helper functions
+def bombing_allowed(bot, channel):
+    setting = bot.db.get_channel_value(channel, 'bombing_allowed')
+    if setting == None:
+        setting = bot.db.get_channel_value(channel, 'bombs_disabled')
+        if setting == None:  # default
+            setting == True
+        else:  # migration
+            setting = not setting
+            bot.db.set_channel_value(channel, 'bombing_allowed', setting)
+            channel = Identifier(channel).lower()
+            bot.db.execute("DELETE FROM channel_values WHERE channel = ? AND key = ?", [channel, 'bombs_disabled'])
+    return setting
+
+
 def explode(bot, trigger):
     target = Identifier(trigger.group(3))
     orig_target = target
@@ -401,49 +408,48 @@ def unexclude(bot, trigger):
     bot.say(STRINGS['MARKED_BOMBABLE'] % target)
 
 
-@commands('bombkickoff')
-@example(".bombkickoff")
-@require_privilege(OP, STRINGS['OP_DISABLE_KICKS'])
+@commands('bombkick', 'bombkicks', 'bombing')
+@example(".bombkicks on")
+@example(".bombing off")
 @require_chanmsg
-def nokick(bot, trigger):
+def bomb_setting(bot, trigger):
     """
-    Allows channel admins and up to disable kicking for bombs in the channel.
+    Allows channel ops and above to change settings for the channel
+    (whether bombs are enabled, and whether they kick on failure).
     """
-    bot.db.set_channel_value(trigger.sender, 'bomb_kicks', False)
-    bot.say(STRINGS['KICKS_DISABLED'] % trigger.sender)
+    cmd = trigger.group(1) or None
+    arg = trigger.group(3) or None
 
+    # which setting?
+    if cmd == 'bombkick' or cmd == 'bombkicks':
+        name = 'bomb kicking'
+        setting = 'bomb_kicks'
+    elif cmd == 'bombs' or cmd == 'bombing':
+        name = 'bombing'
+        setting = 'bombing_allowed'
+    else:
+        bot.reply("Unknown setting command %s, exiting. Please report this to %s." % (cmd, bot.config.core.owner))
+        return NOLIMIT
 
-@commands('bombkickon')
-@example(".bombkickon")
-@require_privilege(OP, STRINGS['OP_ENABLE_KICKS'])
-@require_chanmsg
-def yeskick(bot, trigger):
-    """
-    Allows channel admins and up to (re-)enable kicking for bombs in the channel.
-    """
-    bot.db.set_channel_value(trigger.sender, 'bomb_kicks', True)
-    bot.say(STRINGS['KICKS_ENABLED'] % trigger.sender)
+    # return current setting if no arg given
+    if not arg:
+        enable = bot.db.get_channel_value(trigger.sender, setting)
+        bot.say("%s is %s in %s." % (name.capitalize(), "enabled" if enable else "disabled", trigger.sender))
+        return NOLIMIT
 
-
-@commands('bombsoff')
-@example(".bombsoff")
-@require_privilege(ADMIN, "")
-@require_chanmsg
-def bombnazi(bot, trigger):
-    """
-    Allows channel admins and up to disable bombing entirely in the current channel.
-    """
-    bot.db.set_channel_value(trigger.sender, 'bombs_disabled', True)
-    bot.say(STRINGS['BOMBS_DISABLED'] % trigger.sender)
-
-
-@commands('bombson')
-@example(".bombson")
-@require_privilege(ADMIN, STRINGS['ADMIN_ENABLE_BOMBS'])
-@require_chanmsg
-def bomboprah(bot, trigger):
-    """
-    Allows channel admins and up to (re-)enable bombing in the current channel.
-    """
-    bot.db.set_channel_value(trigger.sender, 'bombs_disabled', False)
-    bot.say(STRINGS['BOMBS_ENABLED'] % trigger.sender)
+    # anyone can query, but only ops can alter
+    if not trigger.admin and bot.privileges[trigger.sender.lower()][trigger.nick.lower()] < ADMIN:
+        bot.reply(STRINGS['OP_REQUIRED_TO_CHANGE'])
+        return NOLIMIT
+    # arg parsing
+    arg = arg.lower()
+    if arg == 'on':
+        enable = True
+    elif arg == 'off':
+        enable = False
+    else:
+        bot.reply("Invalid %s setting. Valid values: 'on', 'off'." % name)
+        return NOLIMIT
+    pfx = 'en' if enable else 'dis'
+    bot.db.set_channel_value(trigger.sender, setting, enable)
+    bot.say("%s is now %sabled in %s." % (name.capitalize(), pfx, trigger.sender))
