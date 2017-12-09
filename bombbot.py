@@ -89,7 +89,7 @@ lock = RLock()
 def start(bot, trigger):
     """
     Put a bomb in the specified user's pants. If they take too long or guess wrong,
-     they die (and get kicked from the channel, if enabled).
+    they "die" and (if enabled) get kicked from the channel.
     """
     if not trigger.group(3):
         bot.say(STRINGS['TARGET_MISSING'])
@@ -158,7 +158,7 @@ def start(bot, trigger):
 @require_chanmsg
 def cutwire(bot, trigger):
     """
-    Tells sopel to cut a wire when you've been bombed.
+    If you've been bombed, tells the bot which wire you want to cut.
     """
     global BOMBS
     target = Identifier(trigger.nick)
@@ -202,7 +202,8 @@ def cutwire(bot, trigger):
 @require_chanmsg
 def cancel_bomb(bot, trigger):
     """
-    Cancel the bomb placed on the specified player (can also be used by admins).
+    Lets a bomber disarm the bomb they set on the specified user. Does not reset the cooldown timer.
+    (Bot admins can cancel bombs on any player in the channel.)
     """
     target = trigger.group(3) or None
     if not target:
@@ -314,7 +315,7 @@ def bomb_glue(bot, trigger):
 @example(".bombs myfriend")
 def bombstats(bot, trigger):
     """
-    Get bomb stats for yourself or another user.
+    Get bomb stats for yourself (with no argument) or another user.
     """
     if not trigger.group(3):
         target = Identifier(trigger.nick)
@@ -356,7 +357,7 @@ def bombstats(bot, trigger):
 @require_owner('Only the bot owner can reset bomb stats')
 def statreset(bot, trigger):
     """
-    Reset a given user's bomb stats (e.g. after abuse)
+    Resets a given user's bomb stats (e.g. after abuse). Admin-only, for obvious reasons.
     """
     if not trigger.group(3):
         bot.say(STRINGS['RESET_WHO'])
