@@ -98,7 +98,7 @@ def start(bot, trigger):
         bot.notice(STRINGS['CHANNEL_DISABLED'] % trigger.sender, trigger.nick)
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
-    if since_last < TIMEOUT and not trigger.admin:
+    if since_last < TIMEOUT:
         bot.notice(STRINGS['TIMEOUT_REMAINING'] % (TIMEOUT - since_last),
                    trigger.nick)
         return
