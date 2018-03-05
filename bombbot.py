@@ -270,8 +270,11 @@ def kickboom(bot, trigger, target, bomber):
 
 
 def kicking_available(bot, channel, nick):
-    bot_priv = bot.privileges[channel.lower()][bot.nick]
-    nick_priv = bot.privileges[channel.lower()][nick]
+    try:
+        bot_priv = bot.privileges[channel.lower()][bot.nick]
+        nick_priv = bot.privileges[channel.lower()][nick]
+    except KeyError:  # privilege checking failed, so default to no kicking
+        return False
     return (
         bot_priv >= OP and bot_priv >= nick_priv
         and bot.db.get_channel_value(channel, 'bomb_kicks')
