@@ -197,7 +197,7 @@ def cutwire(bot, trigger):
             bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
 
 
-@commands('bombcancel', 'cancelbomb')
+@commands('bombcancel', 'cancelbomb', 'defuse')
 @example('.bombcancel unfortunateuser')
 @require_chanmsg
 def cancel_bomb(bot, trigger):
