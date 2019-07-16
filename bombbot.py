@@ -6,6 +6,7 @@ Licensed under the Eiffel Forum License 2.
 http://sopel.chat
 """
 from __future__ import division, unicode_literals
+from sopel.config.types import StaticSection, ValidatedAttribute
 from sopel.module import *
 from sopel.tools import Identifier
 from sopel import formatting
@@ -20,11 +21,8 @@ if sys.version_info.major > 2:
 
 # code below relies on colors being at least 3 elements long
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
-FUSE = 120  # seconds
-TIMEOUT = 600
 
 STRINGS = {
-    'FUSE':                   "%d minute" % (FUSE // 60) if (FUSE % 60) == 0 else ("%d second" % FUSE),
     'TARGET_MISSING':         "Who do you want to bomb?",
     'CHANNEL_DISABLED':       "An admin has disabled bombing in %s.",
     'TIMEOUT_REMAINING':      "You must wait %.0f seconds before you can bomb someone again.",
@@ -83,6 +81,34 @@ BOMBS = {}
 lock = RLock()
 
 
+class BombBotConfig(StaticSection):
+    cooldown = ValidatedAttribute('cooldown', parse=int, default=600)
+    """The cool-down period before the same user can plant another bomb, in seconds."""
+    fuse = ValidatedAttribute('fuse', parse=int, default=120)
+    """How many seconds before a planted bomb explodes if not defused."""
+
+
+def configure(config):
+    config.define_section('bombbot', BombBotConfig)
+    config.bombbot.configure_setting(
+        'fuse',
+        "How many seconds should be allowed to attempt defusing bombs?"
+    )
+    config.bombbot.configure_setting(
+        'cooldown',
+        "How long must a user who just planted a bomb wait before planting another?"
+    )
+
+
+def setup(bot):
+    bot.config.define_section('bombbot', BombBotConfig)
+
+
+def _fuse_time_string(bot):
+    fuse = bot.config.bombbot.fuse
+    return "%d minute" % (fuse // 60) if (fuse % 60) == 0 else ("%d second" % fuse)
+
+
 @commands('bomb')
 @example(".bomb nicky")
 @require_chanmsg
@@ -98,8 +124,8 @@ def start(bot, trigger):
         bot.notice(STRINGS['CHANNEL_DISABLED'] % trigger.sender, trigger.nick)
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
-    if since_last < TIMEOUT:
-        bot.notice(STRINGS['TIMEOUT_REMAINING'] % (TIMEOUT - since_last),
+    if since_last < bot.config.bombbot.cooldown:
+        bot.notice(STRINGS['TIMEOUT_REMAINING'] % (bot.config.bombbot.cooldown - since_last),
                    trigger.nick)
         return
     global BOMBS
@@ -132,7 +158,7 @@ def start(bot, trigger):
         color = choice(wires)
         bot.say(
                 choice(STRINGS['BOMB_PLANTED']) % {'target':           target,
-                                                   'fuse_time': STRINGS['FUSE'],
+                                                   'fuse_time':        _fuse_time_string(bot),
                                                    'wire_num':         num_wires,
                                                    'wire_list':        wires_list,
                                                    'prefix':           bot.config.core.help_prefix or '.'
@@ -140,7 +166,7 @@ def start(bot, trigger):
         bot.notice(STRINGS['BOMB_ANSWER'] % (target, color), trigger.nick)
         if target_unbombable:
             bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
-        timer = Timer(FUSE, explode, (bot, trigger))
+        timer = Timer(bot.config.bombbot.fuse, explode, (bot, trigger))
         BOMBS[target.lower()] = {'wires':  wires,
                                  'color':  color,
                                  'timer':  timer,
@@ -387,8 +413,8 @@ def exclude(bot, trigger):
             return
     if target == trigger.nick:
         time_since = time_since_bomb(bot, target)
-        if time_since < TIMEOUT:
-            bot.notice(STRINGS['RECENTLY_PLANTED'] % (TIMEOUT - time_since), target)
+        if time_since < bot.config.bombbot.cooldown:
+            bot.notice(STRINGS['RECENTLY_PLANTED'] % (bot.config.bombbot.cooldown - time_since), target)
             return
     # Getting this far means all checks passed
     bot.db.set_nick_value(target, 'unbombable', True)
