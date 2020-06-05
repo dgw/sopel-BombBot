@@ -137,7 +137,7 @@ def start(bot, trigger):
     if is_self(bot, trigger.nick, target):
         bot.say(STRINGS['TARGET_SELF'] % trigger.nick)
         return NOLIMIT
-    if target.lower() not in bot.privileges[trigger.sender.lower()]:
+    if target.lower() not in bot.channels[trigger.sender.lower()].privileges:
         bot.say(STRINGS['TARGET_IMAGINARY'])
         return NOLIMIT
     if target_unbombable and not trigger.admin:
@@ -297,8 +297,8 @@ def kickboom(bot, trigger, target, bomber):
 
 def kicking_available(bot, channel, nick):
     try:
-        bot_priv = bot.privileges[channel.lower()][bot.nick]
-        nick_priv = bot.privileges[channel.lower()][nick]
+        bot_priv = bot.channels[channel.lower()].privileges[bot.nick]
+        nick_priv = bot.channels[channel.lower()].privileges[nick]
     except KeyError:  # privilege checking failed, so default to no kicking
         return False
     return (
@@ -468,7 +468,7 @@ def bomb_setting(bot, trigger):
         return NOLIMIT
 
     # anyone can query, but only ops can alter
-    if not trigger.admin and bot.privileges[trigger.sender.lower()][trigger.nick.lower()] < ADMIN:
+    if not trigger.admin and bot.channels[trigger.sender.lower()].privileges[trigger.nick.lower()] < ADMIN:
         bot.reply(STRINGS['OP_REQUIRED_TO_CHANGE'])
         return NOLIMIT
     # arg parsing
