@@ -12,6 +12,7 @@ from sopel.tools import Identifier
 from sopel import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
+import math
 import sys
 import time
 
@@ -311,7 +312,7 @@ def kicking_available(bot, channel, nick):
 def time_since_bomb(bot, nick):
     now = time.time()
     last = bot.db.get_nick_value(nick, 'bomb_last_planted') or 0
-    return abs(last - now)
+    return math.ceil(abs(last - now))
 
 
 def is_self(bot, nick, target):
