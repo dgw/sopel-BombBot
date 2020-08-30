@@ -9,6 +9,7 @@ from __future__ import division, unicode_literals
 from sopel.config.types import StaticSection, ValidatedAttribute
 from sopel.module import *
 from sopel.tools import Identifier
+from sopel.tools.time import seconds_to_human
 from sopel import formatting
 from random import choice, randrange, sample
 from threading import Timer, RLock
@@ -25,7 +26,7 @@ COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purpl
 STRINGS = {
     'TARGET_MISSING':         "Who do you want to bomb?",
     'CHANNEL_DISABLED':       "An admin has disabled bombing in %s.",
-    'TIMEOUT_REMAINING':      "You must wait %.0f seconds before you can bomb someone again.",
+    'TIMEOUT_REMAINING':      "You can bomb someone again %s.",
     'TARGET_BOT':             "You thought you could trick me into bombing myself?!",
     'TARGET_SELF':            "%s pls. Bomb a friend if you have to!",
     'TARGET_IMAGINARY':       "You can't bomb imaginary people!",
@@ -125,7 +126,8 @@ def start(bot, trigger):
         return NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
     if since_last < bot.config.bombbot.cooldown:
-        bot.notice(STRINGS['TIMEOUT_REMAINING'] % (bot.config.bombbot.cooldown - since_last),
+        bot.notice(STRINGS['TIMEOUT_REMAINING']
+                   % seconds_to_human(since_last - bot.config.bombbot.cooldown),
                    trigger.nick)
         return
     global BOMBS
