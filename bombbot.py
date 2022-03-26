@@ -17,12 +17,12 @@ import math
 import sys
 import time
 
-# 2 to 3 stuff; should be replaced by six probably
-if sys.version_info.major > 2:
-    xrange = range
-
-# code below relies on colors being at least 3 elements long
+# code below relies on having at least 5 color choices
 COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
+COLORS = {
+    color.replace('Light_', ''): formatting.color(color.replace('Light_', ''), color)
+    for color in COLORS
+}
 
 STRINGS = {
     'TARGET_MISSING':         "Who do you want to bomb?",
@@ -153,29 +153,31 @@ def start(bot, trigger):
         if target.lower() in BOMBS:
             bot.say(STRINGS['TARGET_FULL'] % target)
             return NOLIMIT
-        wires = [COLORS[i] for i in sorted(sample(xrange(len(COLORS)), randrange(3, 5)))]
+        wires = sample(COLORS.keys(), randrange(3, 5))
         num_wires = len(wires)
-        wires_list = [formatting.color(str(wire), str(wire)) for wire in wires]
-        wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])]).replace('Light_', '')
-        wires = [wire.replace('Light_', '') for wire in wires]
         color = choice(wires)
+        wires_list = [COLORS[wire] for wire in wires]
+        wires_list = ", ".join(wires_list[:-2] + [" and ".join(wires_list[-2:])])
         bot.say(
-                choice(STRINGS['BOMB_PLANTED']) % {'target':           target,
-                                                   'fuse_time':        _fuse_time_string(bot),
-                                                   'wire_num':         num_wires,
-                                                   'wire_list':        wires_list,
-                                                   'prefix':           bot.config.core.help_prefix or '.'
-                                                   })
-        bot.notice(STRINGS['BOMB_ANSWER'] % (target, color), trigger.nick)
+            choice(STRINGS['BOMB_PLANTED']) % {
+                'target':           target,
+                'fuse_time':        _fuse_time_string(bot),
+                'wire_num':         num_wires,
+                'wire_list':        wires_list,
+                'prefix':           bot.config.core.help_prefix or '.'
+            }
+        )
+        bot.notice(STRINGS['BOMB_ANSWER'] % (target, COLORS[color]), trigger.nick)
         if target_unbombable:
             bot.notice(STRINGS['TARGET_DISABLED_FYI'] % target, trigger.nick)
         timer = Timer(bot.config.bombbot.fuse, explode, (bot, trigger))
-        BOMBS[target.lower()] = {'wires':  wires,
-                                 'color':  color,
-                                 'timer':  timer,
-                                 'target': target,
-                                 'bomber': trigger.nick
-                                 }
+        BOMBS[target.lower()] = {
+            'wires':  wires,
+            'color':  color,
+            'timer':  timer,
+            'target': target,
+            'bomber': trigger.nick
+        }
         timer.start()
     bombs_planted = bot.db.get_nick_value(trigger.nick, 'bombs_planted') or 0
     bot.db.set_nick_value(trigger.nick, 'bombs_planted', bombs_planted + 1)
@@ -205,7 +207,7 @@ def cutwire(bot, trigger):
         wirecut = trigger.group(3)
         if wirecut.lower() in ('all', 'all!'):
             bomb['timer'].cancel()  # defuse timer, execute premature detonation
-            bot.say(STRINGS['CUT_ALL_WIRES'] % bomb['color'])
+            bot.say(STRINGS['CUT_ALL_WIRES'] % COLORS[bomb['color']])
             kickboom(bot, trigger, target, bomb['bomber'])
             alls = bot.db.get_nick_value(bomb['target'], 'bomb_alls') or 0
             bot.db.set_nick_value(bomb['target'], 'bomb_alls', alls + 1)
@@ -220,7 +222,7 @@ def cutwire(bot, trigger):
             bot.db.set_nick_value(bomb['target'], 'bomb_defuses', defuses + 1)
         else:
             bomb['timer'].cancel()  # defuse timer, execute premature detonation
-            bot.say(STRINGS['CUT_WRONG'] % bomb['color'])
+            bot.say(STRINGS['CUT_WRONG'] % COLORS[bomb['color']])
             kickboom(bot, trigger, target, bomb['bomber'])
             wrongs = bot.db.get_nick_value(bomb['target'], 'bomb_wrongs') or 0
             bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
