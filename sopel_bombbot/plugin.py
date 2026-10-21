@@ -1,27 +1,31 @@
-"""
-bomb.py - Simple Sopel bomb prank game
-Copyright 2012, Edward Powell http://embolalia.net
-Licensed under the Eiffel Forum License 2.
+"""sopel-bombbot
 
-http://sopel.chat
+A bomb-defusing game for Sopel IRC bots.
+
+Copyright 2012, Edward Powell http://embolalia.net
+Copyright ????, John Lage
+Copyright 2026, dgw
+Licensed under the Eiffel Forum License 2.
 """
-from __future__ import division, unicode_literals
-from sopel.config.types import StaticSection, ValidatedAttribute
-from sopel.module import *
-from sopel.tools import Identifier
-from sopel.tools.time import seconds_to_human
-from sopel import formatting
-from random import choice, randrange, sample
-from threading import Timer, RLock
+from __future__ import annotations
+
 import math
-import sys
+from random import choice, randrange, sample
+from threading import RLock, Timer
 import time
 
+from sopel import formatting, plugin
+from sopel.config.types import StaticSection, ValidatedAttribute
+from sopel.tools.identifiers import Identifier
+from sopel.tools.time import seconds_to_human
+
 # code below relies on having at least 5 color choices
-COLORS = ['Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White', 'Black', 'Purple', 'Orange', 'Pink']
 COLORS = {
     color.replace('Light_', ''): formatting.color(color.replace('Light_', ''), color)
-    for color in COLORS
+    for color in [
+        'Red', 'Light_Green', 'Light_Blue', 'Yellow', 'White',
+        'Black', 'Purple', 'Orange', 'Pink'
+    ]
 }
 
 STRINGS = {
@@ -106,14 +110,20 @@ def setup(bot):
     bot.config.define_section('bombbot', BombBotConfig)
 
 
+def shutdown(bot):
+    global BOMBS
+    with lock:
+        BOMBS.clear()
+
+
 def _fuse_time_string(bot):
     fuse = bot.config.bombbot.fuse
     return "%d minute" % (fuse // 60) if (fuse % 60) == 0 else ("%d second" % fuse)
 
 
-@commands('bomb')
-@example(".bomb nicky")
-@require_chanmsg
+@plugin.command('bomb')
+@plugin.example(".bomb nicky")
+@plugin.require_chanmsg
 def start(bot, trigger):
     """
     Put a bomb in the specified user's pants. If they take too long or guess wrong,
@@ -121,10 +131,10 @@ def start(bot, trigger):
     """
     if not trigger.group(3):
         bot.say(STRINGS['TARGET_MISSING'])
-        return NOLIMIT
+        return plugin.NOLIMIT
     if not bombing_allowed(bot, trigger.sender):
         bot.notice(STRINGS['CHANNEL_DISABLED'] % trigger.sender, trigger.nick)
-        return NOLIMIT
+        return plugin.NOLIMIT
     since_last = time_since_bomb(bot, trigger.nick)
     if since_last < bot.config.bombbot.cooldown:
         bot.notice(STRINGS['TIMEOUT_REMAINING']
@@ -136,24 +146,24 @@ def start(bot, trigger):
     target_unbombable = bot.db.get_nick_value(target, 'unbombable')
     if target == bot.nick:
         bot.say(STRINGS['TARGET_BOT'])
-        return NOLIMIT
+        return plugin.NOLIMIT
     if is_self(bot, trigger.nick, target):
         bot.say(STRINGS['TARGET_SELF'] % trigger.nick)
-        return NOLIMIT
+        return plugin.NOLIMIT
     if target.lower() not in bot.channels[trigger.sender.lower()].privileges:
         bot.say(STRINGS['TARGET_IMAGINARY'])
-        return NOLIMIT
+        return plugin.NOLIMIT
     if target_unbombable and not trigger.admin:
         bot.say(STRINGS['TARGET_DISABLED'] % target)
-        return NOLIMIT
+        return plugin.NOLIMIT
     if bot.db.get_nick_value(trigger.nick, 'unbombable'):
         bot.say(STRINGS['NOT_WHILE_DISABLED'] % trigger.nick)
-        return NOLIMIT
+        return plugin.NOLIMIT
     with lock:
         if target.lower() in BOMBS:
             bot.say(STRINGS['TARGET_FULL'] % target)
-            return NOLIMIT
-        wires = sample(COLORS.keys(), randrange(3, 5))
+            return plugin.NOLIMIT
+        wires = sample(sorted(COLORS.keys()), randrange(3, 5))
         num_wires = len(wires)
         color = choice(wires)
         wires_list = [COLORS[wire] for wire in wires]
@@ -184,9 +194,9 @@ def start(bot, trigger):
     bot.db.set_nick_value(trigger.nick, 'bomb_last_planted', time.time())
 
 
-@commands('cutwire')
-@example(".cutwire red")
-@require_chanmsg
+@plugin.command('cutwire')
+@plugin.example(".cutwire red")
+@plugin.require_chanmsg
 def cutwire(bot, trigger):
     """
     If you've been bombed, tells the bot which wire you want to cut.
@@ -228,9 +238,9 @@ def cutwire(bot, trigger):
             bot.db.set_nick_value(bomb['target'], 'bomb_wrongs', wrongs + 1)
 
 
-@commands('bombcancel', 'cancelbomb', 'defuse')
-@example('.bombcancel unfortunateuser')
-@require_chanmsg
+@plugin.commands('bombcancel', 'cancelbomb', 'defuse')
+@plugin.example('.bombcancel unfortunateuser')
+@plugin.require_chanmsg
 def cancel_bomb(bot, trigger):
     """
     Lets a bomber disarm the bomb they set on the specified user. Does not reset the cooldown timer.
@@ -307,7 +317,7 @@ def kicking_available(bot, channel, nick):
     except KeyError:  # privilege checking failed, so default to no kicking
         return False
     return (
-        bot_priv >= OP and bot_priv >= nick_priv
+        bot_priv >= plugin.OP and bot_priv >= nick_priv
         and bot.db.get_channel_value(channel, 'bomb_kicks')
         and not bot.db.get_nick_value(nick, 'unbombable')
     )
@@ -333,8 +343,8 @@ def is_self(bot, nick, target):
 
 
 # Track nick changes
-@event('NICK')
-@rule('.*')
+@plugin.event('NICK')
+@plugin.rule('.*')
 def bomb_glue(bot, trigger):
     old = trigger.nick
     new = Identifier(trigger)
@@ -344,9 +354,9 @@ def bomb_glue(bot, trigger):
             bot.notice(STRINGS['BOMB_STILL'] % new, new)
 
 
-@commands('bombstats', 'bombs')
-@example(".bombstats")
-@example(".bombs myfriend")
+@plugin.commands('bombstats', 'bombs')
+@plugin.example(".bombstats")
+@plugin.example(".bombs myfriend")
 def bombstats(bot, trigger):
     """
     Get bomb stats for yourself (with no argument) or another user.
@@ -386,9 +396,9 @@ def bombstats(bot, trigger):
     bot.say(msg)
 
 
-@commands('bombstatreset')
-@example(".bombstatreset spammer")
-@require_owner('Only the bot owner can reset bomb stats')
+@plugin.command('bombstatreset')
+@plugin.example(".bombstatreset spammer")
+@plugin.require_owner('Only the bot owner can reset bomb stats')
 def statreset(bot, trigger):
     """
     Resets a given user's bomb stats (e.g. after abuse). Admin-only, for obvious reasons.
@@ -403,8 +413,8 @@ def statreset(bot, trigger):
     bot.say(STRINGS['RESET_DONE'] % target)
 
 
-@commands('bomboff')
-@example(".bomboff")
+@plugin.command('bomboff')
+@plugin.example(".bomboff")
 def exclude(bot, trigger):
     """
     Disable bombing yourself (admins: or another user)
@@ -426,8 +436,8 @@ def exclude(bot, trigger):
     bot.say(STRINGS['MARKED_UNBOMBABLE'] % target)
 
 
-@commands('bombon')
-@example(".bombon")
+@plugin.command('bombon')
+@plugin.example(".bombon")
 def unexclude(bot, trigger):
     """
     Re-enable bombing yourself (admins: or another user)
@@ -443,10 +453,10 @@ def unexclude(bot, trigger):
     bot.say(STRINGS['MARKED_BOMBABLE'] % target)
 
 
-@commands('bombkick', 'bombkicks', 'bombing')
-@example(".bombkicks on")
-@example(".bombing off")
-@require_chanmsg
+@plugin.commands('bombkick', 'bombkicks', 'bombing')
+@plugin.example(".bombkicks on")
+@plugin.example(".bombing off")
+@plugin.require_chanmsg
 def bomb_setting(bot, trigger):
     """
     Allows channel ops and above to change settings for the channel
@@ -464,18 +474,18 @@ def bomb_setting(bot, trigger):
         setting = 'bombing_allowed'
     else:
         bot.reply("Unknown setting command %s, exiting. Please report this to %s." % (cmd, bot.config.core.owner))
-        return NOLIMIT
+        return plugin.NOLIMIT
 
     # return current setting if no arg given
     if not arg:
         enable = bot.db.get_channel_value(trigger.sender, setting)
         bot.say("%s is %s in %s." % (name.capitalize(), "enabled" if enable else "disabled", trigger.sender))
-        return NOLIMIT
+        return plugin.NOLIMIT
 
     # anyone can query, but only ops can alter
-    if not trigger.admin and bot.channels[trigger.sender.lower()].privileges[trigger.nick.lower()] < ADMIN:
+    if not trigger.admin and bot.channels[trigger.sender.lower()].privileges[trigger.nick.lower()] < plugin.ADMIN:
         bot.reply(STRINGS['OP_REQUIRED_TO_CHANGE'])
-        return NOLIMIT
+        return plugin.NOLIMIT
     # arg parsing
     arg = arg.lower()
     if arg == 'on':
@@ -484,7 +494,7 @@ def bomb_setting(bot, trigger):
         enable = False
     else:
         bot.reply("Invalid %s setting. Valid values: 'on', 'off'." % name)
-        return NOLIMIT
+        return plugin.NOLIMIT
     pfx = 'en' if enable else 'dis'
     bot.db.set_channel_value(trigger.sender, setting, enable)
     bot.say("%s is now %sabled in %s." % (name.capitalize(), pfx, trigger.sender))

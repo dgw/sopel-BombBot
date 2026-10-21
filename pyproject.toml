@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+platforms = ["Linux x86, x86-64"]
+
+[tool.setuptools.packages.find]
+include = ["sopel_bombbot", "sopel_bombbot.*"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+readme = { file=["README.md", "NEWS"], content-type="text/markdown" }
+
+[project]
+name = "sopel-bombbot"
+version = "0.1.0"
+description = "A bomb-defusing game for Sopel IRC bots."
+
+authors = [
+  { name="dgw", email="dgw@technobabbl.es" },
+]
+
+license = "EFL-2.0"
+license-files = ["COPYING"]
+dynamic = ["readme"]
+
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Topic :: Communications :: Chat :: Internet Relay Chat",
+]
+keywords = [
+  "sopel",
+  "plugin",
+  "bot",
+  "irc",
+]
+
+requires-python = ">=3.8, <4"
+dependencies = [
+  "sopel>=8.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/dgw/sopel-BombBot"
+"Bug Tracker" = "https://github.com/dgw/sopel-BombBot/issues"
+
+[project.entry-points."sopel.plugins"]
+"bombbot" = "sopel_bombbot.plugin"
